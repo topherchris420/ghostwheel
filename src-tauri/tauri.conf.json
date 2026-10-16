@@ -1,0 +1,40 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "GHOSTWHEEL",
+  "version": "0.1.0",
+  "identifier": "research.ghostwheel.gw01",
+  "build": {
+    "beforeDevCommand": "npm run dev -- --host 127.0.0.1 --port 1420 --strictPort",
+    "devUrl": "http://127.0.0.1:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [{
+      "label": "main",
+      "title": "GHOSTWHEEL | GW-01 — Simulation Research Console",
+      "width": 1440,
+      "height": 960,
+      "minWidth": 1024,
+      "minHeight": 720,
+      "backgroundColor": "#080d0e",
+      "dragDropEnabled": false
+    }],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' ipc: http://ipc.localhost http://127.0.0.1:*; font-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'self'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "shortDescription": "Automotive cybersecurity simulation research platform",
+    "longDescription": "GHOSTWHEEL GW-01 is an original simulator-only automotive cybersecurity research platform. Includes synthetic ECU and CAN traffic, authorization experiments, telemetry and forensic replay. No production vehicle actuation.",
+    "category": "Education",
+    "externalBin": ["binaries/ghostwheel-backend"],
+    "icon": ["icons/icon.ico", "icons/128x128.png"],
+    "windows": {
+      "webviewInstallMode": {"type": "downloadBootstrapper", "silent": true},
+      "nsis": {"installMode": "currentUser", "languages": ["English"], "startMenuFolder": "GHOSTWHEEL Research", "compression": "lzma"}
+    }
+  }
+}

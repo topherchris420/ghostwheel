@@ -1,0 +1,4 @@
+﻿# Optional documentation-build dependencies; backend runtime is standard library.
+reportlab==4.4.4
+pypdf==6.1.1
+pymupdf==1.26.5

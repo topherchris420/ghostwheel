@@ -1,0 +1,439 @@
+{
+  "schema_version": 1,
+  "project": "GHOSTWHEEL | GW-01",
+  "retrieved_on": "2026-10-16",
+  "purpose": "Reference architecture evidence, not a vulnerability advisory or vehicle compatibility claim.",
+  "evidence_classes": {
+    "primary_documentation": "Published by the project or standards/product organization.",
+    "source_observation": "Ordinary static source reading at a pinned commit; not decompilation.",
+    "rea_artifact_observation": "REA static package inventory; no execution or semantic decompilation.",
+    "design_choice": "Original GW-01 research design; requires local validation.",
+    "simulation_result": "A measurement of a named local simulator build, never a production-vehicle vulnerability."
+  },
+  "sources": [
+    {
+      "id": "OVMS-INTRO",
+      "title": "OVMS3 introduction and hardware",
+      "publisher": "Open Vehicles",
+      "url": "https://docs.openvehicles.com/en/latest/introduction.html",
+      "version": "latest, mutable",
+      "retrieved_on": "2026-10-16",
+      "type": "primary_documentation",
+      "supports": [
+        "OVMS remote monitoring and metrics",
+        "ESP32 Xtensa LX6 base hardware and three builtin CAN buses",
+        "Web UI, mobile clients and MQTT integration"
+      ],
+      "short_quote": "three builtin CAN buses",
+      "limitations": [
+        "Documentation describes integrations; no hardware was connected or tested."
+      ]
+    },
+    {
+      "id": "OVMS-WEB",
+      "title": "The OVMS Web UI",
+      "publisher": "Open Vehicles",
+      "url": "https://docs.openvehicles.com/en/latest/userguide/webui.html",
+      "version": "latest, mutable",
+      "retrieved_on": "2026-10-16",
+      "type": "primary_documentation",
+      "supports": [
+        "WebSocket channel for metrics, events and logs",
+        "Web frontend extensibility"
+      ],
+      "short_quote": "live (push) transmission of metrics updates",
+      "limitations": [
+        "Not evidence that GW-01 implements the OVMS wire protocol."
+      ]
+    },
+    {
+      "id": "OVMS-OTA",
+      "title": "OVMS OTA build versions",
+      "publisher": "Open Vehicles",
+      "url": "https://docs.openvehicles.com/en/latest/userguide/ota.html",
+      "version": "latest, mutable",
+      "retrieved_on": "2026-10-16",
+      "type": "primary_documentation",
+      "supports": [
+        "Public main/eap/edge firmware channels",
+        "Documented v3.3-5 firmware download path"
+      ],
+      "short_quote": "main release for users",
+      "limitations": [
+        "Downloaded main artifact was not booted; exact source/build equivalence is unknown."
+      ]
+    },
+    {
+      "id": "OVMS-VEHICLE",
+      "title": "OvmsVehicle and OvmsVehicleFactory declarations",
+      "publisher": "Open Vehicles",
+      "url": "https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/blob/4bb334a59bf3bee8208f579add8b242fa01c1a5c/vehicle/OVMS.V3/components/vehicle/vehicle.h",
+      "revision": "4bb334a59bf3bee8208f579add8b242fa01c1a5c",
+      "type": "source_observation",
+      "retrieved_on": "2026-10-16",
+      "local_path": "evidence/source-snapshots/ovms-vehicle.h",
+      "sha256": "5b01f15639e2a5020c6507f85eb1aa127cdd9bae710039ec792e55839a308b3b",
+      "anchors": [
+        {
+          "lines": [
+            244,
+            264
+          ],
+          "observation": "Vehicle interface exposes CAN bus handles."
+        },
+        {
+          "lines": [
+            311,
+            314
+          ],
+          "observation": "IncomingFrameCan1 through IncomingFrameCan4 are virtual entry points."
+        },
+        {
+          "lines": [
+            700,
+            728
+          ],
+          "observation": "Factory declares vehicle registration."
+        }
+      ],
+      "limitations": [
+        "Declarations establish interfaces, not complete runtime dispatch behavior."
+      ]
+    },
+    {
+      "id": "OVMS-CAN",
+      "title": "CAN frame and bus interfaces",
+      "publisher": "Open Vehicles",
+      "url": "https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/blob/4bb334a59bf3bee8208f579add8b242fa01c1a5c/vehicle/OVMS.V3/components/can/src/can.h",
+      "revision": "4bb334a59bf3bee8208f579add8b242fa01c1a5c",
+      "type": "source_observation",
+      "retrieved_on": "2026-10-16",
+      "local_path": "evidence/source-snapshots/ovms-can.h",
+      "sha256": "a4b4ffea177994e917e10eb777555a3abd76175d002ee02ec1100a1733b3d1a5",
+      "anchors": [
+        {
+          "lines": [
+            127,
+            141
+          ],
+          "observation": "CAN_frame_t declares origin, message ID and eight payload bytes."
+        },
+        {
+          "lines": [
+            395,
+            409
+          ],
+          "observation": "Frame input, listeners and callbacks are separate interfaces."
+        }
+      ],
+      "limitations": [
+        "GW-01 uses independent synthetic messages; no OEM frame mapping is derived or distributed."
+      ]
+    },
+    {
+      "id": "OVMS-EVENTS",
+      "title": "OVMS event interface",
+      "publisher": "Open Vehicles",
+      "url": "https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/blob/4bb334a59bf3bee8208f579add8b242fa01c1a5c/vehicle/OVMS.V3/main/ovms_events.h",
+      "revision": "4bb334a59bf3bee8208f579add8b242fa01c1a5c",
+      "type": "source_observation",
+      "retrieved_on": "2026-10-16",
+      "local_path": "evidence/source-snapshots/ovms-events.h",
+      "sha256": "453019b69909a38604d8521f89e3e46a7f7091bd5c212087b72e74e0252d621e",
+      "anchors": [
+        {
+          "lines": [
+            128,
+            140
+          ],
+          "observation": "OvmsEvents declares event registration and signal overloads."
+        }
+      ],
+      "limitations": [
+        "No callback ordering or queue liveness conclusion is drawn from the declarations."
+      ]
+    },
+    {
+      "id": "OVMS-METRICS",
+      "title": "OVMS metrics interface",
+      "publisher": "Open Vehicles",
+      "url": "https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/blob/4bb334a59bf3bee8208f579add8b242fa01c1a5c/vehicle/OVMS.V3/main/ovms_metrics.h",
+      "revision": "4bb334a59bf3bee8208f579add8b242fa01c1a5c",
+      "type": "source_observation",
+      "retrieved_on": "2026-10-16",
+      "local_path": "evidence/source-snapshots/ovms-metrics.h",
+      "sha256": "121f66c1eb8d04fa119992b273655845e9c0d40e951f170bcf81106a538ea780",
+      "anchors": [
+        {
+          "lines": [
+            1179,
+            1240
+          ],
+          "observation": "Metrics registry interface declares RegisterListener."
+        }
+      ],
+      "limitations": [
+        "No source-to-firmware equivalence was established."
+      ]
+    },
+    {
+      "id": "CARLA-SYNC",
+      "title": "Synchrony and time-step",
+      "publisher": "CARLA Simulator",
+      "url": "https://carla.readthedocs.io/en/0.9.16/adv_synchrony_timestep/",
+      "version": "0.9.16",
+      "retrieved_on": "2026-10-16",
+      "type": "primary_documentation",
+      "supports": [
+        "Single tick owner",
+        "Synchronous mode plus fixed delta",
+        "Substep consistency constraint",
+        "Reload/batch/seed requirements for reproducibility"
+      ],
+      "short_quote": "only one client should tick",
+      "limitations": [
+        "These conditions do not establish bit-identical behavior across engines, hardware or versions."
+      ],
+      "historical_reference_note": "0.9.15 initially consulted; equivalent cited contract rechecked against official 0.9.16 page on 2026-10-16."
+    },
+    {
+      "id": "CARLA-API",
+      "title": "CARLA Python API reference",
+      "publisher": "CARLA Simulator",
+      "url": "https://carla.readthedocs.io/en/0.9.16/python_api/",
+      "version": "0.9.16",
+      "retrieved_on": "2026-10-16",
+      "type": "primary_documentation",
+      "supports": [
+        "VehicleControl steer is normalized [-1,1]",
+        "Throttle/brake are normalized [0,1]",
+        "get_wheel_steer_angle returns physics angle",
+        "set_wheel_steer_direction affects visuals only"
+      ],
+      "short_quote": "Does not affect the physics of the vehicle.",
+      "limitations": [
+        "Constructor documentation contains a steer-range inconsistency; use the explicit instance-variable range and pinned implementation checks."
+      ],
+      "historical_reference_note": "0.9.15 initially consulted; equivalent cited contract rechecked against official 0.9.16 page on 2026-10-16."
+    },
+    {
+      "id": "CARLA-RECORDER",
+      "title": "Recorder",
+      "publisher": "CARLA Simulator",
+      "url": "https://carla.readthedocs.io/en/0.9.16/adv_recorder/",
+      "version": "0.9.16",
+      "retrieved_on": "2026-10-16",
+      "type": "primary_documentation",
+      "supports": [
+        "CARLA recorder files are written on server",
+        "Replay updates actor states",
+        "Additional data is optional"
+      ],
+      "short_quote": "server side only",
+      "limitations": [
+        "GW-01 forensic replay is its own SQLite event playback unless explicitly marked as a CARLA recorder run."
+      ],
+      "historical_reference_note": "0.9.15 initially consulted; equivalent cited contract rechecked against official 0.9.16 page on 2026-10-16."
+    },
+    {
+      "id": "CIA-CAN",
+      "title": "Controller Area Network classic",
+      "publisher": "CAN in Automation",
+      "url": "https://www.can-cia.org/can-knowledge/can-cc",
+      "retrieved_on": "2026-10-16",
+      "type": "primary_documentation",
+      "supports": [
+        "Broadcast communication",
+        "11-bit and 29-bit identifiers",
+        "CAN classic data length zero through eight bytes",
+        "Identifier priority and bitwise arbitration",
+        "CRC and error containment"
+      ],
+      "short_quote": "lowest value has the highest priority",
+      "limitations": [
+        "GW-01 message objects are not electrically or bit-level conformant CAN hardware."
+      ]
+    },
+    {
+      "id": "BOSCH-ECU",
+      "title": "Control units",
+      "publisher": "Bosch Mobility",
+      "url": "https://www.bosch-mobility.com/en/solutions/control-units/",
+      "retrieved_on": "2026-10-16",
+      "type": "primary_documentation",
+      "supports": [
+        "ECUs process sensors and control actuators",
+        "Specialized ECU roles"
+      ],
+      "short_quote": "process sensor data",
+      "limitations": [
+        "Vendor overview is context, not a model of every vehicle or safety certification."
+      ]
+    },
+    {
+      "id": "BOSCH-ZONE",
+      "title": "Zone ECU",
+      "publisher": "Bosch Mobility",
+      "url": "https://www.bosch-mobility.com/en/solutions/control-units/zone-ecu/",
+      "retrieved_on": "2026-10-16",
+      "type": "primary_documentation",
+      "supports": [
+        "Zonal ECUs connect centralized computers with distributed ECUs, sensors and actuators"
+      ],
+      "short_quote": "hardware link between vehicle computers",
+      "limitations": [
+        "GW-01 topology is illustrative, not a reproduction of Bosch hardware."
+      ]
+    },
+    {
+      "id": "AUTOSAR-SECOC",
+      "title": "Specification of Secure Onboard Communication Protocol",
+      "publisher": "AUTOSAR",
+      "url": "https://www.autosar.org/fileadmin/standards/R23-11/FO/AUTOSAR_FO_PRS_SecOcProtocol.pdf",
+      "version": "FO R23-11",
+      "retrieved_on": "2026-10-16",
+      "type": "primary_documentation",
+      "supports": [
+        "Authenticity and freshness are separate checks above underlying communication",
+        "SecOC requires sending and receiving ECU participation"
+      ],
+      "short_quote": "verify the authenticity and freshness",
+      "limitations": [
+        "GW-01 is not an AUTOSAR implementation or SecOC conformance test."
+      ]
+    },
+    {
+      "id": "OVMS-APK-ORIGIN",
+      "title": "Officially linked OVMS Android APK releases",
+      "publisher": "Open Vehicles",
+      "url": "https://github.com/openvehicles/Open-Vehicle-Android/tree/master/release",
+      "retrieved_on": "2026-10-16",
+      "type": "primary_documentation",
+      "supports": [
+        "Public 5.2.4 APK candidate location"
+      ],
+      "limitations": [
+        "Package signature was not verified; HTTPS origin and digest are retained."
+      ]
+    },
+    {
+      "id": "CARLA-COORD",
+      "title": "CARLA coordinate systems and transformations",
+      "publisher": "CARLA Simulator",
+      "url": "https://carla.readthedocs.io/en/latest/coordinates/",
+      "version": "latest, mutable",
+      "retrieved_on": "2026-10-16",
+      "type": "primary_documentation",
+      "supports": [
+        "Left-handed ground-plane convention: X forward, Y right, Z up"
+      ],
+      "limitations": [
+        "Documented coordinate contract, not runtime physics validation."
+      ]
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "ART-OVMS-FIRMWARE",
+      "url": "https://api.openvehicles.com/firmware/ota/v3.3-5/main/ovms3.bin",
+      "retrieved_on": "2026-10-16",
+      "local_path": "evidence/artifacts/ovms3-main.bin",
+      "bytes": 4184944,
+      "sha256": "7ca6e397fe4ff1d5317a1f40a1fd14703f302b5dfda112664fc938720ff419e2",
+      "status": "Downloaded; REA firmware analysis blocked",
+      "rea_evidence_ids": [],
+      "limitations": [
+        "Never executed, flashed or connected to hardware.",
+        "REA requires Linux and a caller-supplied Binwalk path; current Windows ARM64 host unsupported.",
+        "Exact firmware source revision unknown."
+      ]
+    },
+    {
+      "id": "ART-OVMS-ANDROID-524",
+      "url": "https://raw.githubusercontent.com/openvehicles/Open-Vehicle-Android/master/release/OpenVehicleApp-release-5.2.4.apk",
+      "retrieved_on": "2026-10-16",
+      "local_path": "evidence/artifacts/OpenVehicleApp-release-5.2.4.apk",
+      "bytes": 24090580,
+      "sha256": "1ed0f575db6908723df48bbc54fce3d9a2353506c026dd0a2b11b3e484fcc69e",
+      "status": "REA static archive inventory completed; semantic decompilation unavailable",
+      "rea_evidence_ids": [
+        "ev_fab81af93b961f9eb706b0710a44a8a69cd6be18adfe561615afca28f0dd7ced",
+        "ev_7e8a22a497006251fc2d9aa436f3a65549732c847d5a9a64decde904339b498b"
+      ],
+      "bundle": "evidence/rea-ovms-package.json",
+      "limitations": [
+        "ZIP central-directory inventory only.",
+        "No signature verification, execution, permission decoding, method decompilation or data-flow analysis.",
+        "JADX subprocess ownership unavailable on Windows ARM64."
+      ]
+    }
+  ],
+  "claims": [
+    {
+      "id": "REF-01",
+      "statement": "OVMS separates vehicle-facing interfaces, CAN transport, metrics and events.",
+      "class": "source_observation",
+      "sources": [
+        "OVMS-VEHICLE",
+        "OVMS-CAN",
+        "OVMS-EVENTS",
+        "OVMS-METRICS"
+      ],
+      "boundary": "Interface declarations only; no call graph or runtime ordering claim."
+    },
+    {
+      "id": "REF-02",
+      "statement": "CARLA control input is normalized, and a physics wheel-angle observation is a distinct API.",
+      "class": "primary_documentation",
+      "sources": [
+        "CARLA-API"
+      ],
+      "boundary": "No GW-01 angle measurement is presumed to be a production steering sensor."
+    },
+    {
+      "id": "REF-03",
+      "statement": "Synchronous fixed-step operation has specific reproducibility prerequisites.",
+      "class": "primary_documentation",
+      "sources": [
+        "CARLA-SYNC"
+      ],
+      "boundary": "A local backend repeatability test must still be executed."
+    },
+    {
+      "id": "REA-01",
+      "statement": "Official OVMS APK contains AndroidManifest.xml, classes.dex and classes2.dex entries.",
+      "class": "rea_artifact_observation",
+      "rea_evidence_ids": [
+        "ev_7e8a22a497006251fc2d9aa436f3a65549732c847d5a9a64decde904339b498b"
+      ],
+      "boundary": "Presence does not establish runtime behavior."
+    },
+    {
+      "id": "DESIGN-01",
+      "statement": "GW-01 uses an original synthetic command protocol with deterministic validation before simulator actuation.",
+      "class": "design_choice",
+      "sources": [
+        "AUTOSAR-SECOC"
+      ],
+      "boundary": "Conceptual motivation only; no SecOC or vehicle compatibility claim."
+    },
+    {
+      "id": "DESIGN-02",
+      "statement": "GW-01 virtual ECU roles and vehicle profiles are independent educational models.",
+      "class": "design_choice",
+      "sources": [
+        "BOSCH-ECU",
+        "BOSCH-ZONE",
+        "OVMS-VEHICLE"
+      ],
+      "boundary": "No production ECU instruction set, OEM CAN payload, firmware image or real actuation connector is part of the platform."
+    }
+  ],
+  "unknowns": [
+    "Firmware instructions and pseudocode were not recovered.",
+    "APK classes and permissions were not decoded.",
+    "No production-vehicle behavior, vulnerability, remote-control path or attack resilience was tested.",
+    "CARLA SDK installation and mocked adapter contracts do not establish server execution; no end-to-end CARLA server run was available.",
+    "No bit-level CAN, electromagnetic behavior, ECU scheduler or tire-model fidelity is claimed."
+  ]
+}

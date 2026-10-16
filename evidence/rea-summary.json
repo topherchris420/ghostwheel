@@ -1,0 +1,251 @@
+{
+  "recorded_at": "2026-10-16",
+  "rea_version": "6.4.0",
+  "host": {
+    "platform": "win32",
+    "architecture": "arm64"
+  },
+  "initial_target_open": false,
+  "firmware_inspection": {
+    "status": "blocked",
+    "error": {
+      "code": "capability_unavailable",
+      "category": "unsupported_provider",
+      "message": "This integration requires Linux and an absolute REA_BINWALK_COMMAND path to the caller-supplied tool"
+    },
+    "capability": {
+      "name": "inspect_firmware_regions",
+      "surface": "firmware-provider",
+      "client_requirements": {
+        "required": [],
+        "optional": [],
+        "missing_required": [],
+        "missing_optional": []
+      },
+      "effects": {
+        "mutatesTarget": false,
+        "mutatesSession": true,
+        "writesFilesystem": true,
+        "launchesProcess": true,
+        "accessesNetwork": false,
+        "changesUiState": false,
+        "mayDiscardData": false,
+        "idempotent": true
+      },
+      "annotations": {
+        "read_only": false,
+        "destructive": false,
+        "idempotent": true,
+        "open_world": true
+      },
+      "available": false,
+      "reason": "provider_missing",
+      "remediation": "On Linux, provide an absolute REA_BINWALK_COMMAND (Binwalk 3.1.x, verified with 3.1.0) or REA_UNBLOB_COMMAND (Unblob 26.6.x, verified with 26.6.4) path and util-linux prlimit. Extraction also requires the selected format’s external extractor."
+    }
+  },
+  "native_providers": [
+    {
+      "provider": {
+        "id": "ghidra",
+        "name": "Ghidra",
+        "version": null
+      },
+      "availability": {
+        "status": "unavailable",
+        "code": "not_configured",
+        "reason": "Set GHIDRA_INSTALL_DIR to an extracted Ghidra 12.1.x release directory.",
+        "diagnostics": {
+          "install_dir": null,
+          "analyze_headless_path": null,
+          "native_decompiler_path": null,
+          "application_properties_path": null,
+          "provider_version": null,
+          "java_command": "java.exe",
+          "java_home": "C:\\Program Files\\Eclipse Adoptium\\jdk-21.0.12.101-hotspot",
+          "java_version": "21.0.12.1",
+          "platform": "win32",
+          "architecture": "arm64",
+          "checks": [
+            {
+              "name": "configuration",
+              "ok": false,
+              "code": "not_configured",
+              "detail": "GHIDRA_INSTALL_DIR is not set"
+            },
+            {
+              "name": "platform",
+              "ok": true,
+              "code": null,
+              "detail": "win32"
+            },
+            {
+              "name": "architecture",
+              "ok": false,
+              "code": "unsupported_host",
+              "detail": "arm64"
+            },
+            {
+              "name": "installation",
+              "ok": false,
+              "code": "executable_missing",
+              "detail": "Ghidra application properties unavailable"
+            },
+            {
+              "name": "version",
+              "ok": false,
+              "code": "version_unresolved",
+              "detail": "unknown"
+            },
+            {
+              "name": "headless",
+              "ok": false,
+              "code": "executable_missing",
+              "detail": "analyzeHeadless unavailable"
+            },
+            {
+              "name": "native_decompiler",
+              "ok": false,
+              "code": "executable_missing",
+              "detail": "Matching native decompiler for win32/arm64 was not found"
+            },
+            {
+              "name": "java",
+              "ok": true,
+              "code": null,
+              "detail": "21.0.12.1; 64-bit; JDK; C:\\Program Files\\Eclipse Adoptium\\jdk-21.0.12.101-hotspot; accepted a 64-bit full JDK 21 or newer"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "provider": {
+        "id": "hopper",
+        "name": "Hopper Disassembler",
+        "version": null
+      },
+      "availability": {
+        "status": "unavailable",
+        "code": "unsupported_host",
+        "reason": "Hopper integration is not supported on win32.",
+        "diagnostics": {
+          "launcher_path": "/Applications/Hopper Disassembler.app/Contents/MacOS/hopper",
+          "platform": "win32"
+        }
+      }
+    },
+    {
+      "provider": {
+        "id": "ida",
+        "name": "IDA Pro MCP adapter",
+        "version": "1"
+      },
+      "availability": {
+        "status": "unavailable",
+        "code": "not_configured",
+        "reason": "Set REA_IDA_MCP_CONFIG to an upstream IDA MCP JSON registration; see docs/ida-provider.md.",
+        "diagnostics": {
+          "configured": false,
+          "live_connection_probed": false
+        }
+      }
+    }
+  ],
+  "android_semantic_analysis": {
+    "name": "inspect_android_package",
+    "surface": "android-provider",
+    "client_requirements": {
+      "required": [],
+      "optional": [],
+      "missing_required": [],
+      "missing_optional": []
+    },
+    "effects": {
+      "mutatesTarget": false,
+      "mutatesSession": true,
+      "writesFilesystem": true,
+      "launchesProcess": true,
+      "accessesNetwork": false,
+      "changesUiState": false,
+      "mayDiscardData": false,
+      "idempotent": true
+    },
+    "annotations": {
+      "read_only": false,
+      "destructive": false,
+      "idempotent": true,
+      "open_world": true
+    },
+    "available": false,
+    "reason": "unsupported_host",
+    "remediation": "Android JADX subprocess ownership is unsupported on win32/arm64; use Linux, macOS, or Windows x64 with its bundled native controls."
+  },
+  "apk_inventory": {
+    "evidence_id": "ev_7e8a22a497006251fc2d9aa436f3a65549732c847d5a9a64decde904339b498b",
+    "manifest": {
+      "manifest_id": "agm_7e61e83ab8c7bf56398ed225ab81294967c0aa4eb5de5b1c3db837cd13be19ca",
+      "root_artifact_id": "art_afdfa20a739ee63872768d01a8f5d678d7f58cbe40383dcafba3509d396e9fba",
+      "root_sha256": "1ed0f575db6908723df48bbc54fce3d9a2353506c026dd0a2b11b3e484fcc69e",
+      "root_format": "apk",
+      "graph_sha256": "005cb02e219bbe9053bcf25392917db360e7847b3b66c8dad01a1ceb84f06427",
+      "node_count": 1878,
+      "occurrence_count": 2033,
+      "edge_count": 2032
+    },
+    "interesting_entries": [
+      {
+        "occurrence_id": "occ_8a807de25db2b4835b393cbe91ae52f1d288f005b95dcf2c6b86f0646b8ece71",
+        "artifact_id": "art_d91271170a3ea7aa8764bd01f1b05f12da8d60f1a65f716016483f7f154e437b",
+        "parent_occurrence_id": "occ_6f8faeb08f9d640c7dbc1b22d4f6ef9c767ac739104edea7029467068120441b",
+        "logical_path": "AndroidManifest.xml",
+        "entry_kind": "file",
+        "artifact_kind": "resource",
+        "artifact_format": "file",
+        "declared_size": 21964,
+        "compressed_size": 4706,
+        "executable": false,
+        "encrypted": false,
+        "hash_status": "verified",
+        "source_location": null,
+        "limitations": []
+      },
+      {
+        "occurrence_id": "occ_aeacab15746520f670656e9877f9e77240c2c8050bb6e4c1783a14df2d0850ce",
+        "artifact_id": "art_ef0baeb141f5d13473b10e7f0a4f857c2822666c5de9501890652f62048a806e",
+        "parent_occurrence_id": "occ_6f8faeb08f9d640c7dbc1b22d4f6ef9c767ac739104edea7029467068120441b",
+        "logical_path": "classes.dex",
+        "entry_kind": "file",
+        "artifact_kind": "resource",
+        "artifact_format": "file",
+        "declared_size": 7890092,
+        "compressed_size": 3046981,
+        "executable": false,
+        "encrypted": false,
+        "hash_status": "verified",
+        "source_location": null,
+        "limitations": []
+      },
+      {
+        "occurrence_id": "occ_f5d662503d3695e47befe13172eb7b89069ae891fff83df386667d882139ed5a",
+        "artifact_id": "art_d9ba5002fa0b811d2e5eb072b6f099be99dbf5a2480644f1e5951db06c8f5699",
+        "parent_occurrence_id": "occ_6f8faeb08f9d640c7dbc1b22d4f6ef9c767ac739104edea7029467068120441b",
+        "logical_path": "classes2.dex",
+        "entry_kind": "file",
+        "artifact_kind": "resource",
+        "artifact_format": "file",
+        "declared_size": 8285172,
+        "compressed_size": 2882135,
+        "executable": false,
+        "encrypted": false,
+        "hash_status": "verified",
+        "source_location": null,
+        "limitations": []
+      }
+    ],
+    "limitations": [
+      "ZIP inventory lists central-directory entries only. Bytes after the central directory, including an APK Signing Block or a ZIP comment, are not occurrences.",
+      "Logical archive names collide under English (en-US) Unicode case folding; a case-insensitive destination cannot store both spellings. This comparison is not a filesystem observation."
+    ]
+  },
+  "closed": true
+}

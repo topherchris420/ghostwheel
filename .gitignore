@@ -1,0 +1,17 @@
+node_modules/
+.build/
+dist/
+src-tauri/target/
+src-tauri/gen/
+src-tauri/binaries/*.exe
+**/__pycache__/
+*.pyc
+.venv/
+output/
+release/
+tmp/
+evidence/artifacts/
+evidence/upstream-ovms3/
+*.log
+
+*.tsbuildinfo

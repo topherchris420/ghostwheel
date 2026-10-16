@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "main-window",
+  "description": "Only the local main window receives basic window lifecycle APIs. No filesystem, shell or external process permissions are exposed to JavaScript.",
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}

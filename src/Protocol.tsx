@@ -1,7 +1,220 @@
-import { ArrowUpRight, Cable, ChevronDown, CircleAlert, LockKeyhole, Play, Radio, ScanLine, ShieldCheck, Terminal } from 'lucide-react';
+import {
+  ArrowUpRight,
+  Cable,
+  ChevronDown,
+  CircleAlert,
+  LockKeyhole,
+  Play,
+  Radio,
+  ScanLine,
+  ShieldCheck,
+  Terminal,
+} from 'lucide-react';
 import { fmt, SectionTitle } from './components';
 import type { ConsoleModel } from './useConsole';
-export default function Protocol({m}:{m:ConsoleModel}){
- const {snapshot,boot,carla,connected,busy,replay}=m;
- return <div className="protocol-layout"><section className="panel protocol-hero"><div className="shield-frame large"><ShieldCheck size={40} strokeWidth={1}/></div><div><span className="eyebrow">NON-NEGOTIABLE SYSTEM BOUNDARY</span><h2>Simulator actuation. Explicit authorization.</h2><p>GHOSTWHEEL is an original educational research platform. Its vehicle models, ECU messages and attack scenarios are synthetic. Findings describe this implementation and do not establish vulnerabilities in production vehicles or the reference projects.</p><span className="tag cyan-tag">ACTUATION: {snapshot?.safety.actuation||'SIMULATOR_ONLY'}</span></div></section><div className="protocol-grid"><section className="panel"><SectionTitle number="01" title="Command authorization path"/><div className="authorization-path">{[{name:'Local session',text:'Loopback transport and session capability.'},{name:'Identity & sequence',text:'Known vehicle, monotonic sequence and matching session.'},{name:'Freshness window',text:'Issued simulation tick must be recent and not in the future.'},{name:'Physical envelope',text:'Finite values, range, steering slew and lateral acceleration limits.'},{name:'Virtual actuation',text:'Accepted commands reach only the simulator. Ground plane: +X forward, +Y right; positive yaw and steering turn clockwise/right.'}].map((p,i)=><div key={p.name}><span>{String(i+1).padStart(2,'0')}</span><div><b>{p.name}</b><p>{p.text}</p></div>{i<4&&<ChevronDown size={15}/>}</div>)}</div><div className="protocol-fail"><CircleAlert size={15}/><div><b>Invalid or missing commands → safe state</b><p>Rejections and watchdog expiration are recorded with their reasons. The research suite tests the implemented gateway boundary.</p></div></div></section><section className="panel"><SectionTitle number="02" title="Independent virtual architectures"/><div className="profile-list">{boot?.architectures.map(a=><div key={a.id}><span className="profile-index">{a.id.toUpperCase()}</span><h3>{a.name}</h3><p>{a.description}</p><div><span>Wheelbase <b>{fmt(a.wheelbase_m,2)} m</b></span><span>Steer <b>±{a.max_steer_deg}°</b></span><span>Rate <b>{a.max_steer_rate_deg_s}°/s</b></span></div></div>)}</div></section></div><section className="panel connector-panel"><SectionTitle number="03" title="Actuation connectors"><span className="tag cyan-tag">TRANSPORT POLICY: SIMULATION ONLY</span></SectionTitle><div className="profile-list connector-list">{boot?.connectors?.map(c=>{const active=(snapshot?.connector||boot.connector||'builtin')===c.id;return <div key={c.id} className={active?'active':''}><span className="profile-index">{c.transport.toUpperCase()}</span><h3>{c.name}</h3><p>{c.description}</p><div><span>Replay <b>{c.recompute?'RECOMPUTED':'CHAIN-VERIFIED'}</b></span><span>Status <b>{c.available?'AVAILABLE':'UNAVAILABLE'}</b></span>{!c.available&&<span>{c.reason}</span>}<button className="button secondary" disabled={active||!c.available||!connected||!!busy||!!replay} onClick={()=>m.selectConnector(c.id)}><Cable size={13}/> {active?'Active':busy==='connector'?'Routing…':'Route actuation'}</button></div></div>;})}{!boot?.connectors?.length&&<div className="table-empty">Connector catalog loads from the local simulator.</div>}</div><div className="protocol-fail"><LockKeyhole size={15}/><div><b>No physical actuation transport exists</b><p>The connector registry refuses every transport other than simulation. CAN, OBD, serial and remote-device connectors cannot be registered, listed or reached through this console.</p></div></div></section><section className="panel carla-panel"><div className="carla-symbol"><ScanLine size={26} strokeWidth={1}/></div><div><span className="eyebrow">OPTIONAL LOCAL SIMULATOR ADAPTER</span><h2>CARLA bridge</h2><p>{carla?.connected?'Connected to the local CARLA server. Actuation remains within its simulated vehicle.':carla?.reason||'Connect to a separately running local CARLA server. The built-in deterministic simulator is available independently.'}</p></div><span className={'tag '+(carla?.connected?'cyan-tag':'')}>{carla?.connected?'CONNECTED':carla?.available?'AVAILABLE':'NOT CONNECTED'}</span><button className="button secondary" disabled={!connected||!!busy||!!replay} onClick={m.toggleCarla}>{carla?.connected?<LockKeyhole size={13}/>:<Play size={13}/>} {busy==='carla'?'Connecting…':carla?.connected?'Disconnect CARLA':'Connect CARLA'}</button></section><section className="panel evidence-scope"><SectionTitle number="04" title="Research provenance & interpretation"/><div><div><Radio size={22}/><h3>OVMS architecture</h3><p>Reference research informs modular telemetry and vehicle abstraction. GW-01 does not reuse a production vehicle actuation protocol.</p><a href="https://docs.openvehicles.com/" target="_blank" rel="noreferrer">Official OVMS documentation <ArrowUpRight size={12}/></a></div><div><ScanLine size={22}/><h3>CARLA simulation</h3><p>The optional local CARLA adapter supplies a separate simulator backend. The built-in deterministic engine runs without CARLA installed.</p><a href="https://carla.readthedocs.io/" target="_blank" rel="noreferrer">Official CARLA documentation <ArrowUpRight size={12}/></a></div><div><Terminal size={22}/><h3>REA evidence</h3><p>Artifact investigation, provenance and source citations are provided in the accompanying engineering documentation. Simulated metrics are reported separately.</p><span className="mono tiny muted">SEE PACKAGED RESEARCH REPORT</span></div></div></section></div>;
+export default function Protocol({ m }: { m: ConsoleModel }) {
+  const { snapshot, boot, carla, connected, busy, replay } = m;
+  return (
+    <div className="protocol-layout">
+      <section className="panel protocol-hero">
+        <div className="shield-frame large">
+          <ShieldCheck size={40} strokeWidth={1} />
+        </div>
+        <div>
+          <span className="eyebrow">NON-NEGOTIABLE SYSTEM BOUNDARY</span>
+          <h2>Simulator actuation. Explicit authorization.</h2>
+          <p>
+            GHOSTWHEEL is an original educational research platform. Its vehicle models, ECU
+            messages and attack scenarios are synthetic. Findings describe this implementation and
+            do not establish vulnerabilities in production vehicles or the reference projects.
+          </p>
+          <span className="tag cyan-tag">
+            ACTUATION: {snapshot?.safety.actuation || 'SIMULATOR_ONLY'}
+          </span>
+        </div>
+      </section>
+      <div className="protocol-grid">
+        <section className="panel">
+          <SectionTitle number="01" title="Command authorization path" />
+          <div className="authorization-path">
+            {[
+              { name: 'Local session', text: 'Loopback transport and session capability.' },
+              {
+                name: 'Identity & sequence',
+                text: 'Known vehicle, monotonic sequence and matching session.',
+              },
+              {
+                name: 'Freshness window',
+                text: 'Issued simulation tick must be recent and not in the future.',
+              },
+              {
+                name: 'Physical envelope',
+                text: 'Finite values, range, steering slew and lateral acceleration limits.',
+              },
+              {
+                name: 'Virtual actuation',
+                text: 'Accepted commands reach only the simulator. Ground plane: +X forward, +Y right; positive yaw and steering turn clockwise/right.',
+              },
+            ].map((p, i) => (
+              <div key={p.name}>
+                <span>{String(i + 1).padStart(2, '0')}</span>
+                <div>
+                  <b>{p.name}</b>
+                  <p>{p.text}</p>
+                </div>
+                {i < 4 && <ChevronDown size={15} />}
+              </div>
+            ))}
+          </div>
+          <div className="protocol-fail">
+            <CircleAlert size={15} />
+            <div>
+              <b>Invalid or missing commands → safe state</b>
+              <p>
+                Rejections and watchdog expiration are recorded with their reasons. The research
+                suite tests the implemented gateway boundary.
+              </p>
+            </div>
+          </div>
+        </section>
+        <section className="panel">
+          <SectionTitle number="02" title="Independent virtual architectures" />
+          <div className="profile-list">
+            {boot?.architectures.map((a) => (
+              <div key={a.id}>
+                <span className="profile-index">{a.id.toUpperCase()}</span>
+                <h3>{a.name}</h3>
+                <p>{a.description}</p>
+                <div>
+                  <span>
+                    Wheelbase <b>{fmt(a.wheelbase_m, 2)} m</b>
+                  </span>
+                  <span>
+                    Steer <b>±{a.max_steer_deg}°</b>
+                  </span>
+                  <span>
+                    Rate <b>{a.max_steer_rate_deg_s}°/s</b>
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+      <section className="panel connector-panel">
+        <SectionTitle number="03" title="Actuation connectors">
+          <span className="tag cyan-tag">TRANSPORT POLICY: SIMULATION ONLY</span>
+        </SectionTitle>
+        <div className="profile-list connector-list">
+          {boot?.connectors?.map((c) => {
+            const active = (snapshot?.connector || boot.connector || 'builtin') === c.id;
+            return (
+              <div key={c.id} className={active ? 'active' : ''}>
+                <span className="profile-index">{c.transport.toUpperCase()}</span>
+                <h3>{c.name}</h3>
+                <p>{c.description}</p>
+                <div>
+                  <span>
+                    Replay <b>{c.recompute ? 'RECOMPUTED' : 'CHAIN-VERIFIED'}</b>
+                  </span>
+                  <span>
+                    Status <b>{c.available ? 'AVAILABLE' : 'UNAVAILABLE'}</b>
+                  </span>
+                  {!c.available && <span>{c.reason}</span>}
+                  <button
+                    className="button secondary"
+                    disabled={active || !c.available || !connected || !!busy || !!replay}
+                    onClick={() => m.selectConnector(c.id)}
+                  >
+                    <Cable size={13} />{' '}
+                    {active ? 'Active' : busy === 'connector' ? 'Routing…' : 'Route actuation'}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+          {!boot?.connectors?.length && (
+            <div className="table-empty">Connector catalog loads from the local simulator.</div>
+          )}
+        </div>
+        <div className="protocol-fail">
+          <LockKeyhole size={15} />
+          <div>
+            <b>No physical actuation transport exists</b>
+            <p>
+              The connector registry refuses every transport other than simulation. CAN, OBD, serial
+              and remote-device connectors cannot be registered, listed or reached through this
+              console.
+            </p>
+          </div>
+        </div>
+      </section>
+      <section className="panel carla-panel">
+        <div className="carla-symbol">
+          <ScanLine size={26} strokeWidth={1} />
+        </div>
+        <div>
+          <span className="eyebrow">OPTIONAL LOCAL SIMULATOR ADAPTER</span>
+          <h2>CARLA bridge</h2>
+          <p>
+            {carla?.connected
+              ? 'Connected to the local CARLA server. Actuation remains within its simulated vehicle.'
+              : carla?.reason ||
+                'Connect to a separately running local CARLA server. The built-in deterministic simulator is available independently.'}
+          </p>
+        </div>
+        <span className={'tag ' + (carla?.connected ? 'cyan-tag' : '')}>
+          {carla?.connected ? 'CONNECTED' : carla?.available ? 'AVAILABLE' : 'NOT CONNECTED'}
+        </span>
+        <button
+          className="button secondary"
+          disabled={!connected || !!busy || !!replay}
+          onClick={m.toggleCarla}
+        >
+          {carla?.connected ? <LockKeyhole size={13} /> : <Play size={13} />}{' '}
+          {busy === 'carla'
+            ? 'Connecting…'
+            : carla?.connected
+              ? 'Disconnect CARLA'
+              : 'Connect CARLA'}
+        </button>
+      </section>
+      <section className="panel evidence-scope">
+        <SectionTitle number="04" title="Research provenance & interpretation" />
+        <div>
+          <div>
+            <Radio size={22} />
+            <h3>OVMS architecture</h3>
+            <p>
+              Reference research informs modular telemetry and vehicle abstraction. GW-01 does not
+              reuse a production vehicle actuation protocol.
+            </p>
+            <a href="https://docs.openvehicles.com/" target="_blank" rel="noreferrer">
+              Official OVMS documentation <ArrowUpRight size={12} />
+            </a>
+          </div>
+          <div>
+            <ScanLine size={22} />
+            <h3>CARLA simulation</h3>
+            <p>
+              The optional local CARLA adapter supplies a separate simulator backend. The built-in
+              deterministic engine runs without CARLA installed.
+            </p>
+            <a href="https://carla.readthedocs.io/" target="_blank" rel="noreferrer">
+              Official CARLA documentation <ArrowUpRight size={12} />
+            </a>
+          </div>
+          <div>
+            <Terminal size={22} />
+            <h3>REA evidence</h3>
+            <p>
+              Artifact investigation, provenance and source citations are provided in the
+              accompanying engineering documentation. Simulated metrics are reported separately.
+            </p>
+            <span className="mono tiny muted">SEE PACKAGED RESEARCH REPORT</span>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
 }

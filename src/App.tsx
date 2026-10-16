@@ -1,4 +1,17 @@
-import { ArrowDownToLine, ArrowUpRight, Check, CircleAlert, Database, FlaskConical, LockKeyhole, RefreshCw, RotateCcw, ScanLine, ShieldCheck, X } from 'lucide-react';
+import {
+  ArrowDownToLine,
+  ArrowUpRight,
+  Check,
+  CircleAlert,
+  Database,
+  FlaskConical,
+  LockKeyhole,
+  RefreshCw,
+  RotateCcw,
+  ScanLine,
+  ShieldCheck,
+  X,
+} from 'lucide-react';
 import { IconMark } from './components';
 import { useConsole } from './useConsole';
 import type { Tab } from './useConsole';
@@ -6,14 +19,226 @@ import Operations from './Operations';
 import Research from './Research';
 import Forensics from './Forensics';
 import Protocol from './Protocol';
-export default function App(){
- const m=useConsole();const {tab,snapshot,connected,busy,replay,error,notice}=m;
- const navItems:{id:Tab;label:string;icon:typeof ScanLine;code:string}[]=[{id:'operations',label:'Operations',icon:ScanLine,code:'01'},{id:'research',label:'Research lab',icon:FlaskConical,code:'02'},{id:'forensics',label:'Forensic replay',icon:Database,code:'03'},{id:'protocol',label:'System protocol',icon:ShieldCheck,code:'04'}];
- return <div className="app-shell"><aside className="rail"><a className="brand-symbol" href="#" aria-label="GHOSTWHEEL operations" onClick={e=>{e.preventDefault();m.setTab('operations');}}><IconMark/></a><div className="rail-navigation">{navItems.map(item=><button key={item.id} title={item.label} aria-label={item.label} className={tab===item.id?'active':''} onClick={()=>m.setTab(item.id)}><item.icon size={20} strokeWidth={1.5}/></button>)}</div><div className="rail-bottom"><span className="vertical-text">ISOLATED RESEARCH ENVIRONMENT</span><LockKeyhole size={17}/><div className="operator-avatar">GW</div></div></aside><div className="workspace"><header className="topbar"><div className="wordmark">GHOSTWHEEL<span className="wordmark-divider">/</span><b>GW-01</b><span className="restriction">RESTRICTED</span></div><div className="topbar-right"><span className="environment-chip"><span className={connected?'dot cyan':'dot red'}/>{connected?'SIMULATION LINK ACTIVE':'SIMULATION OFFLINE'}</span><span className="topbar-divider"/><span className="mono tiny muted">AUTOMOTIVE CYBER-PHYSICAL RESEARCH</span></div></header><nav className="tabbar">{navItems.map(item=><button key={item.id} className={tab===item.id?'active':''} onClick={()=>m.setTab(item.id)}><span>{item.code}</span>{item.label}</button>)}<div className="tabbar-end"><LockKeyhole size={12}/> SIMULATOR ONLY</div></nav><main><div className="page-heading"><div><div className="eyebrow"><span/> PROJECT GHOSTWHEEL <span className="muted">/</span> {tab==='operations'?'CONTROL & OBSERVATION':tab==='research'?'DETERMINISTIC EXPERIMENTS':tab==='forensics'?'RECORDING & RECONSTRUCTION':'ARCHITECTURE & SAFETY'}</div><h1>{tab==='operations'?'Vehicle operations':tab==='research'?'Research laboratory':tab==='forensics'?'Forensic replay':'System protocol'}<span className="heading-period">.</span></h1><p>{tab==='operations'?'A closed-loop environment for automotive security research.':tab==='research'?'Reproducible tests. Measured response. Evidence from simulation.':tab==='forensics'?'Inspect recorded telemetry and reconstruct every command.':'An explicit boundary between research software and physical actuation.'}</p></div><div className="heading-actions"><div className="session-stamp"><span>SIMULATION TIME</span><b>{snapshot?new Date(snapshot.sim_time*1000).toISOString().slice(11,19):'--:--:--'}<small>.{snapshot?String(Math.floor((snapshot.sim_time%1)*100)).padStart(2,'0'):'--'}</small></b></div>{tab==='operations'?<button className="button secondary" disabled={!connected||!!busy} onClick={()=>m.reset(snapshot?.vehicle.architecture_id||m.boot?.architectures[0]?.id||'aster')}><RotateCcw size={14}/> Reset simulation</button>:<button className="button secondary" disabled={!connected||!!busy} onClick={m.exportRun}><ArrowDownToLine size={14}/> Export {replay?'replay':'session'}</button>}</div></div>
- {error&&<div className="message error"><CircleAlert size={16}/><div><b>{connected?'Operation could not complete':'Simulator connection unavailable'}</b><span>{error}{!connected?' · Start the local backend or launch the desktop application.':''}</span></div>{!connected&&<button onClick={()=>void m.connect()}><RefreshCw size={14}/> Reconnect</button>}<button className="message-close" aria-label="Dismiss error" onClick={()=>m.setError('')}><X size={15}/></button></div>}{notice&&<div className="notice"><Check size={14}/>{notice}<button aria-label="Dismiss notification" onClick={()=>m.setNotice('')}><X size={13}/></button></div>}
- {!replay&&snapshot?.paused&&snapshot.tick>=8000&&<div className="message"><Database size={16}/><div><b>Recording budget reached</b><span>This bounded session has paused. Reset the simulation to archive it and continue with a fresh run.</span></div></div>}
- {replay&&<div className="replay-banner"><span><Database size={15}/> FORENSIC REPLAY <b>{replay.run.id.slice(0,16)}</b> · Read-only recorded state</span><button onClick={m.exitReplay}>Return to live <ArrowUpRight size={14}/></button></div>}
- {tab==='operations'&&<Operations m={m}/>} {tab==='research'&&<Research m={m}/>} {tab==='forensics'&&<Forensics m={m}/>} {tab==='protocol'&&<Protocol m={m}/>}
- <footer><span><span className="dot cyan"/> GHOSTWHEEL RESEARCH PLATFORM <b>v0.1.0</b></span><span>LOCAL EXECUTION <span className="footer-slash">/</span> SYNTHETIC CAN <span className="footer-slash">/</span> NO PRODUCTION ACTUATION</span><span>GW-01 <LockKeyhole size={11}/></span></footer></main></div></div>;
+export default function App() {
+  const m = useConsole();
+  const { tab, snapshot, connected, busy, replay, error, notice } = m;
+  const navItems: { id: Tab; label: string; icon: typeof ScanLine; code: string }[] = [
+    { id: 'operations', label: 'Operations', icon: ScanLine, code: '01' },
+    { id: 'research', label: 'Research lab', icon: FlaskConical, code: '02' },
+    { id: 'forensics', label: 'Forensic replay', icon: Database, code: '03' },
+    { id: 'protocol', label: 'System protocol', icon: ShieldCheck, code: '04' },
+  ];
+  return (
+    <div className="app-shell">
+      <aside className="rail">
+        <a
+          className="brand-symbol"
+          href="#"
+          aria-label="GHOSTWHEEL operations"
+          onClick={(e) => {
+            e.preventDefault();
+            m.setTab('operations');
+          }}
+        >
+          <IconMark />
+        </a>
+        <div className="rail-navigation">
+          {navItems.map((item) => (
+            <button
+              key={item.id}
+              title={item.label}
+              aria-label={item.label}
+              className={tab === item.id ? 'active' : ''}
+              onClick={() => m.setTab(item.id)}
+            >
+              <item.icon size={20} strokeWidth={1.5} />
+            </button>
+          ))}
+        </div>
+        <div className="rail-bottom">
+          <span className="vertical-text">ISOLATED RESEARCH ENVIRONMENT</span>
+          <LockKeyhole size={17} />
+          <div className="operator-avatar">GW</div>
+        </div>
+      </aside>
+      <div className="workspace">
+        <header className="topbar">
+          <div className="wordmark">
+            GHOSTWHEEL<span className="wordmark-divider">/</span>
+            <b>GW-01</b>
+            <span className="restriction">RESTRICTED</span>
+          </div>
+          <div className="topbar-right">
+            <span className="environment-chip">
+              <span className={connected ? 'dot cyan' : 'dot red'} />
+              {connected ? 'SIMULATION LINK ACTIVE' : 'SIMULATION OFFLINE'}
+            </span>
+            <span className="topbar-divider" />
+            <span className="mono tiny muted">AUTOMOTIVE CYBER-PHYSICAL RESEARCH</span>
+          </div>
+        </header>
+        <nav className="tabbar">
+          {navItems.map((item) => (
+            <button
+              key={item.id}
+              className={tab === item.id ? 'active' : ''}
+              onClick={() => m.setTab(item.id)}
+            >
+              <span>{item.code}</span>
+              {item.label}
+            </button>
+          ))}
+          <div className="tabbar-end">
+            <LockKeyhole size={12} /> SIMULATOR ONLY
+          </div>
+        </nav>
+        <main>
+          <div className="page-heading">
+            <div>
+              <div className="eyebrow">
+                <span /> PROJECT GHOSTWHEEL <span className="muted">/</span>{' '}
+                {tab === 'operations'
+                  ? 'CONTROL & OBSERVATION'
+                  : tab === 'research'
+                    ? 'DETERMINISTIC EXPERIMENTS'
+                    : tab === 'forensics'
+                      ? 'RECORDING & RECONSTRUCTION'
+                      : 'ARCHITECTURE & SAFETY'}
+              </div>
+              <h1>
+                {tab === 'operations'
+                  ? 'Vehicle operations'
+                  : tab === 'research'
+                    ? 'Research laboratory'
+                    : tab === 'forensics'
+                      ? 'Forensic replay'
+                      : 'System protocol'}
+                <span className="heading-period">.</span>
+              </h1>
+              <p>
+                {tab === 'operations'
+                  ? 'A closed-loop environment for automotive security research.'
+                  : tab === 'research'
+                    ? 'Reproducible tests. Measured response. Evidence from simulation.'
+                    : tab === 'forensics'
+                      ? 'Inspect recorded telemetry and reconstruct every command.'
+                      : 'An explicit boundary between research software and physical actuation.'}
+              </p>
+            </div>
+            <div className="heading-actions">
+              <div className="session-stamp">
+                <span>SIMULATION TIME</span>
+                <b>
+                  {snapshot
+                    ? new Date(snapshot.sim_time * 1000).toISOString().slice(11, 19)
+                    : '--:--:--'}
+                  <small>
+                    .
+                    {snapshot
+                      ? String(Math.floor((snapshot.sim_time % 1) * 100)).padStart(2, '0')
+                      : '--'}
+                  </small>
+                </b>
+              </div>
+              {tab === 'operations' ? (
+                <button
+                  className="button secondary"
+                  disabled={!connected || !!busy}
+                  onClick={() =>
+                    m.reset(
+                      snapshot?.vehicle.architecture_id || m.boot?.architectures[0]?.id || 'aster',
+                    )
+                  }
+                >
+                  <RotateCcw size={14} /> Reset simulation
+                </button>
+              ) : (
+                <button
+                  className="button secondary"
+                  disabled={!connected || !!busy}
+                  onClick={m.exportRun}
+                >
+                  <ArrowDownToLine size={14} /> Export {replay ? 'replay' : 'session'}
+                </button>
+              )}
+            </div>
+          </div>
+          {error && (
+            <div className="message error">
+              <CircleAlert size={16} />
+              <div>
+                <b>
+                  {connected ? 'Operation could not complete' : 'Simulator connection unavailable'}
+                </b>
+                <span>
+                  {error}
+                  {!connected
+                    ? ' · Start the local backend or launch the desktop application.'
+                    : ''}
+                </span>
+              </div>
+              {!connected && (
+                <button onClick={() => void m.connect()}>
+                  <RefreshCw size={14} /> Reconnect
+                </button>
+              )}
+              <button
+                className="message-close"
+                aria-label="Dismiss error"
+                onClick={() => m.setError('')}
+              >
+                <X size={15} />
+              </button>
+            </div>
+          )}
+          {notice && (
+            <div className="notice">
+              <Check size={14} />
+              {notice}
+              <button aria-label="Dismiss notification" onClick={() => m.setNotice('')}>
+                <X size={13} />
+              </button>
+            </div>
+          )}
+          {!replay && snapshot?.paused && snapshot.tick >= 8000 && (
+            <div className="message">
+              <Database size={16} />
+              <div>
+                <b>Recording budget reached</b>
+                <span>
+                  This bounded session has paused. Reset the simulation to archive it and continue
+                  with a fresh run.
+                </span>
+              </div>
+            </div>
+          )}
+          {replay && (
+            <div className="replay-banner">
+              <span>
+                <Database size={15} /> FORENSIC REPLAY <b>{replay.run.id.slice(0, 16)}</b> ·
+                Read-only recorded state
+              </span>
+              <button onClick={m.exitReplay}>
+                Return to live <ArrowUpRight size={14} />
+              </button>
+            </div>
+          )}
+          {tab === 'operations' && <Operations m={m} />} {tab === 'research' && <Research m={m} />}{' '}
+          {tab === 'forensics' && <Forensics m={m} />} {tab === 'protocol' && <Protocol m={m} />}
+          <footer>
+            <span>
+              <span className="dot cyan" /> GHOSTWHEEL RESEARCH PLATFORM <b>v0.1.0</b>
+            </span>
+            <span>
+              LOCAL EXECUTION <span className="footer-slash">/</span> SYNTHETIC CAN{' '}
+              <span className="footer-slash">/</span> NO PRODUCTION ACTUATION
+            </span>
+            <span>
+              GW-01 <LockKeyhole size={11} />
+            </span>
+          </footer>
+        </main>
+      </div>
+    </div>
+  );
 }
-

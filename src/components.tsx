@@ -1,23 +1,315 @@
 import { useState } from 'react';
 import { Aperture, Crosshair, Minus, Plus } from 'lucide-react';
 import type { HistoryPoint, Snapshot } from './types';
-export const fmt=(n:number|undefined,places=1)=>Number.isFinite(n)?Number(n).toFixed(places):'—';
-export const pad=(n:number,length=6)=>String(n).padStart(length,'0');
-export const clamp=(value:number,min:number,max:number)=>Math.max(min,Math.min(max,value));
-export function saveJson(value:unknown,name:string){const url=URL.createObjectURL(new Blob([JSON.stringify(value,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
-export function IconMark(){return <div className="icon-mark"><Aperture size={27} strokeWidth={1.2}/><span/></div>;}
-export function SectionTitle({number,title,children}:{number:string;title:string;children?:React.ReactNode}){return <div className="section-title"><span className="section-number">{number}</span><h2>{title}</h2>{children}</div>;}
-export function Sparkline({points,field,color='#72d8ce',compare}:{points:HistoryPoint[];field:'steer'|'speed'|'latency';color?:string;compare?:boolean}){
- const values=points.map(p=>p[field]);if(compare) values.push(...points.map(p=>p.target));
- const min=Math.min(0,...values),max=Math.max(field==='steer'?1:0.01,...values),range=Math.max(0.01,max-min);
- const d=(key:'steer'|'target'|'speed'|'latency')=>points.map((p,i)=>`${i===0?'M':'L'}${(i/Math.max(1,points.length-1)*500).toFixed(2)},${(81-(p[key]-min)/range*65).toFixed(2)}`).join(' ');
- return <svg className="sparkline" viewBox="0 0 500 100" preserveAspectRatio="none" role="img" aria-label={`${field} history from recorded simulator state`}><path d="M0 25H500M0 53H500M0 81H500" stroke="#273037" strokeDasharray="3 5" fill="none"/>{compare&&<path d={d('target')} fill="none" stroke="#dc9b6e" strokeWidth="1.8" strokeDasharray="5 4"/>}<path d={d(field)} fill="none" stroke={color} strokeWidth="2" vectorEffect="non-scaling-stroke"/></svg>;
+export const fmt = (n: number | undefined, places = 1) =>
+  Number.isFinite(n) ? Number(n).toFixed(places) : '—';
+export const pad = (n: number, length = 6) => String(n).padStart(length, '0');
+export const clamp = (value: number, min: number, max: number) =>
+  Math.max(min, Math.min(max, value));
+export function saveJson(value: unknown, name: string) {
+  const url = URL.createObjectURL(
+    new Blob([JSON.stringify(value, null, 2)], { type: 'application/json' }),
+  );
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
-export function CarShape(){return <svg className="car-shape" viewBox="0 0 200 100" aria-hidden="true"><path d="M24 33L47 17Q97 5 143 18L173 37L182 63L168 76L36 76L18 62Z" fill="#1a242c" stroke="#71818a" strokeWidth="1.2"/><path d="M54 24Q93 16 130 24L149 42H43Z" fill="#263b45" stroke="#65818c"/><path d="M93 20V43M39 47H164M77 48V70M139 48L144 68" stroke="#55636c" fill="none"/><path d="M24 45H38M167 45H178" stroke="#7de0d6" strokeWidth="3"/><circle cx="51" cy="73" r="14" fill="#090d11" stroke="#6d7b84"/><circle cx="51" cy="73" r="8" fill="#202a32" stroke="#505c65"/><circle cx="151" cy="73" r="14" fill="#090d11" stroke="#6d7b84"/><circle cx="151" cy="73" r="8" fill="#202a32" stroke="#505c65"/></svg>;}
-export function TestField({snapshot,connected}:{snapshot:Snapshot|null;connected:boolean}){
- const [zoom,setZoom]=useState(1);const [follow,setFollow]=useState(true);const vehicle=snapshot?.vehicle;const scale=3*zoom;const cx=follow?(vehicle?.x_m||0):0,cy=follow?(vehicle?.y_m||0):0;
- const project=(p:{x_m:number;y_m:number})=>`${400+(p.x_m-cx)*scale},${230+(p.y_m-cy)*scale}`;
- const x=400+((vehicle?.x_m||0)-cx)*scale,y=230+((vehicle?.y_m||0)-cy)*scale;const trail=(snapshot?.trail||[]).map(project).join(' ');
- return <div className="field-wrap"><div className="field-status"><span className="live-indicator"/> {snapshot?.mode==='carla'?'CARLA BRIDGE':snapshot?.mode==='sil'?'SIL TRANSPORT CONNECTOR':'BUILT-IN SIMULATOR'} <span className="muted">/</span> <span className="muted">TOP-DOWN TELEMETRY</span></div><svg className="test-field" viewBox="0 0 800 460" role="img" aria-label="Live vehicle position and actual recorded trajectory on a metric reference grid"><defs><pattern id="smallgrid" width={30*zoom} height={30*zoom} patternUnits="userSpaceOnUse" x={400-cx*scale} y={230-cy*scale}><path d={`M${30*zoom} 0H0V${30*zoom}`} fill="none" stroke="#29343b" strokeWidth=".65"/></pattern><pattern id="largegrid" width={150*zoom} height={150*zoom} patternUnits="userSpaceOnUse" x={400-cx*scale} y={230-cy*scale}><rect width={150*zoom} height={150*zoom} fill="url(#smallgrid)"/><path d={`M${150*zoom} 0H0V${150*zoom}`} fill="none" stroke="#3d4a51" strokeWidth=".8"/></pattern><radialGradient id="fieldVignette"><stop offset="0" stopColor="#14212a" stopOpacity="0"/><stop offset="1" stopColor="#0c1319" stopOpacity=".7"/></radialGradient></defs><rect width="800" height="460" fill="#131d24"/><rect width="800" height="460" fill="url(#largegrid)"/><rect width="800" height="460" fill="url(#fieldVignette)"/><path d="M30 66V30H66M734 30H770V66M770 394V430H734M66 430H30V394" fill="none" stroke="#53636a" strokeWidth="1"/><path d="M370 230H430M400 200V260" stroke="#50616a" strokeDasharray="2 4"/>{trail&&<><polyline points={trail} fill="none" stroke="#72d8ce" strokeWidth="6" opacity=".08"/><polyline points={trail} fill="none" stroke="#72d8ce" strokeWidth="1.8" strokeLinejoin="round"/></>}{vehicle&&<><circle cx={x} cy={y} r="61" stroke="#77d7ce" opacity=".12" fill="none"/><circle cx={x} cy={y} r="90" stroke="#77d7ce" opacity=".07" strokeDasharray="3 6" fill="none"/><g transform={`translate(${x},${y}) rotate(${vehicle.yaw_rad*180/Math.PI})`}><path d="M32 0L47 0M43 -4L47 0L43 4" stroke="#77d7ce" fill="none" opacity=".8"/><rect x="-15" y="-10" width="5" height="3" rx="1" fill="#788a94"/><rect x="-15" y="7" width="5" height="3" rx="1" fill="#788a94"/><g transform={`translate(11,-9) rotate(${vehicle.steer_deg})`}><rect x="-3" y="-1.5" width="6" height="3" rx="1" fill="#e7ad7a"/></g><g transform={`translate(11,9) rotate(${vehicle.steer_deg})`}><rect x="-3" y="-1.5" width="6" height="3" rx="1" fill="#e7ad7a"/></g><rect x="-20" y="-8" width="43" height="16" rx="5" fill="#162c34" stroke="#90ded5" strokeWidth="1.5"/><path d="M7 -6H15L19 -3V3L15 6H7Z" fill="#6da6ae" opacity=".55"/><path d="M-10 -6H-3V6H-10Z" fill="#476974"/><path d="M22 -5V5" stroke="#ecf6ed" strokeWidth="2"/><path d="M-19 -5V-2M-19 2V5" stroke="#d39471" strokeWidth="2"/></g><path d={`M${x+67} ${y-38}l18 -18h65`} stroke="#668188" fill="none"/><text x={x+91} y={y-63} fill="#b9d6d7" fontSize="10" fontFamily="monospace">GW-01 / {vehicle.id.toUpperCase()}</text><text x={x+91} y={y-47} fill="#6d8c95" fontSize="9" fontFamily="monospace">{fmt(vehicle.speed_mps*3.6)} KM/H</text></>}{!connected&&<text x="400" y="280" fill="#89999f" fontSize="12" textAnchor="middle" letterSpacing="2">AWAITING TELEMETRY</text>}<g transform="translate(718,72)"><path d="M0 -15V20M-5 11L0 20L5 11M-15 0H20M11 -5L20 0L11 5" stroke="#94a6ac" fill="none"/><text x="0" y="35" fill="#94a6ac" textAnchor="middle" fontSize="9" fontFamily="monospace">+Y</text><text x="27" y="4" fill="#61757e" fontSize="9" fontFamily="monospace">+X</text></g><path d={`M48 397v6h${30*zoom}v-6`} stroke="#879aa2" fill="none"/><text x="48" y="419" fill="#879aa2" fontSize="9" fontFamily="monospace">10 METERS</text></svg><div className="field-bottom"><span>X <b>{fmt(vehicle?.x_m,2)}</b> m <span className="sep">/</span> Y <b>{fmt(vehicle?.y_m,2)}</b> m <span className="sep">/</span> YAW <b>{fmt(vehicle?vehicle.yaw_rad*180/Math.PI:undefined)}</b>°</span><div><button aria-label="Zoom out" onClick={()=>setZoom(z=>clamp(z-.2,.4,3))}><Minus size={13}/></button><span>{Math.round(zoom*100)}%</span><button aria-label="Zoom in" onClick={()=>setZoom(z=>clamp(z+.2,.4,3))}><Plus size={13}/></button><button className={follow?'selected':''} aria-label="Toggle vehicle tracking" title="Follow vehicle" onClick={()=>setFollow(v=>!v)}><Crosshair size={15}/></button></div></div></div>;
+export function IconMark() {
+  return (
+    <div className="icon-mark">
+      <Aperture size={27} strokeWidth={1.2} />
+      <span />
+    </div>
+  );
 }
-export function SteeringWheel({angle}:{angle:number}){return <svg viewBox="0 0 100 100" className="steering-wheel" aria-hidden="true"><g transform={`rotate(${angle*2} 50 50)`}><circle cx="50" cy="50" r="35" stroke="#7e929a" strokeWidth="5" fill="none"/><path d="M17 41L43 47M83 41L57 47M50 58V85" stroke="#7e929a" strokeWidth="6"/><circle cx="50" cy="50" r="12" fill="#18232b" stroke="#85c8c5" strokeWidth="1.5"/><path d="M46 50H54M50 46V54" stroke="#85c8c5"/></g></svg>;}
+export function SectionTitle({
+  number,
+  title,
+  children,
+}: {
+  number: string;
+  title: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="section-title">
+      <span className="section-number">{number}</span>
+      <h2>{title}</h2>
+      {children}
+    </div>
+  );
+}
+export function Sparkline({
+  points,
+  field,
+  color = '#72d8ce',
+  compare,
+}: {
+  points: HistoryPoint[];
+  field: 'steer' | 'speed' | 'latency';
+  color?: string;
+  compare?: boolean;
+}) {
+  const values = points.map((p) => p[field]);
+  if (compare) values.push(...points.map((p) => p.target));
+  const min = Math.min(0, ...values),
+    max = Math.max(field === 'steer' ? 1 : 0.01, ...values),
+    range = Math.max(0.01, max - min);
+  const d = (key: 'steer' | 'target' | 'speed' | 'latency') =>
+    points
+      .map(
+        (p, i) =>
+          `${i === 0 ? 'M' : 'L'}${((i / Math.max(1, points.length - 1)) * 500).toFixed(2)},${(81 - ((p[key] - min) / range) * 65).toFixed(2)}`,
+      )
+      .join(' ');
+  return (
+    <svg
+      className="sparkline"
+      viewBox="0 0 500 100"
+      preserveAspectRatio="none"
+      role="img"
+      aria-label={`${field} history from recorded simulator state`}
+    >
+      <path d="M0 25H500M0 53H500M0 81H500" stroke="#273037" strokeDasharray="3 5" fill="none" />
+      {compare && (
+        <path
+          d={d('target')}
+          fill="none"
+          stroke="#dc9b6e"
+          strokeWidth="1.8"
+          strokeDasharray="5 4"
+        />
+      )}
+      <path
+        d={d(field)}
+        fill="none"
+        stroke={color}
+        strokeWidth="2"
+        vectorEffect="non-scaling-stroke"
+      />
+    </svg>
+  );
+}
+export function CarShape() {
+  return (
+    <svg className="car-shape" viewBox="0 0 200 100" aria-hidden="true">
+      <path
+        d="M24 33L47 17Q97 5 143 18L173 37L182 63L168 76L36 76L18 62Z"
+        fill="#1a242c"
+        stroke="#71818a"
+        strokeWidth="1.2"
+      />
+      <path d="M54 24Q93 16 130 24L149 42H43Z" fill="#263b45" stroke="#65818c" />
+      <path d="M93 20V43M39 47H164M77 48V70M139 48L144 68" stroke="#55636c" fill="none" />
+      <path d="M24 45H38M167 45H178" stroke="#7de0d6" strokeWidth="3" />
+      <circle cx="51" cy="73" r="14" fill="#090d11" stroke="#6d7b84" />
+      <circle cx="51" cy="73" r="8" fill="#202a32" stroke="#505c65" />
+      <circle cx="151" cy="73" r="14" fill="#090d11" stroke="#6d7b84" />
+      <circle cx="151" cy="73" r="8" fill="#202a32" stroke="#505c65" />
+    </svg>
+  );
+}
+export function TestField({
+  snapshot,
+  connected,
+}: {
+  snapshot: Snapshot | null;
+  connected: boolean;
+}) {
+  const [zoom, setZoom] = useState(1);
+  const [follow, setFollow] = useState(true);
+  const vehicle = snapshot?.vehicle;
+  const scale = 3 * zoom;
+  const cx = follow ? vehicle?.x_m || 0 : 0,
+    cy = follow ? vehicle?.y_m || 0 : 0;
+  const project = (p: { x_m: number; y_m: number }) =>
+    `${400 + (p.x_m - cx) * scale},${230 + (p.y_m - cy) * scale}`;
+  const x = 400 + ((vehicle?.x_m || 0) - cx) * scale,
+    y = 230 + ((vehicle?.y_m || 0) - cy) * scale;
+  const trail = (snapshot?.trail || []).map(project).join(' ');
+  return (
+    <div className="field-wrap">
+      <div className="field-status">
+        <span className="live-indicator" />{' '}
+        {snapshot?.mode === 'carla'
+          ? 'CARLA BRIDGE'
+          : snapshot?.mode === 'sil'
+            ? 'SIL TRANSPORT CONNECTOR'
+            : 'BUILT-IN SIMULATOR'}{' '}
+        <span className="muted">/</span> <span className="muted">TOP-DOWN TELEMETRY</span>
+      </div>
+      <svg
+        className="test-field"
+        viewBox="0 0 800 460"
+        role="img"
+        aria-label="Live vehicle position and actual recorded trajectory on a metric reference grid"
+      >
+        <defs>
+          <pattern
+            id="smallgrid"
+            width={30 * zoom}
+            height={30 * zoom}
+            patternUnits="userSpaceOnUse"
+            x={400 - cx * scale}
+            y={230 - cy * scale}
+          >
+            <path
+              d={`M${30 * zoom} 0H0V${30 * zoom}`}
+              fill="none"
+              stroke="#29343b"
+              strokeWidth=".65"
+            />
+          </pattern>
+          <pattern
+            id="largegrid"
+            width={150 * zoom}
+            height={150 * zoom}
+            patternUnits="userSpaceOnUse"
+            x={400 - cx * scale}
+            y={230 - cy * scale}
+          >
+            <rect width={150 * zoom} height={150 * zoom} fill="url(#smallgrid)" />
+            <path
+              d={`M${150 * zoom} 0H0V${150 * zoom}`}
+              fill="none"
+              stroke="#3d4a51"
+              strokeWidth=".8"
+            />
+          </pattern>
+          <radialGradient id="fieldVignette">
+            <stop offset="0" stopColor="#14212a" stopOpacity="0" />
+            <stop offset="1" stopColor="#0c1319" stopOpacity=".7" />
+          </radialGradient>
+        </defs>
+        <rect width="800" height="460" fill="#131d24" />
+        <rect width="800" height="460" fill="url(#largegrid)" />
+        <rect width="800" height="460" fill="url(#fieldVignette)" />
+        <path
+          d="M30 66V30H66M734 30H770V66M770 394V430H734M66 430H30V394"
+          fill="none"
+          stroke="#53636a"
+          strokeWidth="1"
+        />
+        <path d="M370 230H430M400 200V260" stroke="#50616a" strokeDasharray="2 4" />
+        {trail && (
+          <>
+            <polyline points={trail} fill="none" stroke="#72d8ce" strokeWidth="6" opacity=".08" />
+            <polyline
+              points={trail}
+              fill="none"
+              stroke="#72d8ce"
+              strokeWidth="1.8"
+              strokeLinejoin="round"
+            />
+          </>
+        )}
+        {vehicle && (
+          <>
+            <circle cx={x} cy={y} r="61" stroke="#77d7ce" opacity=".12" fill="none" />
+            <circle
+              cx={x}
+              cy={y}
+              r="90"
+              stroke="#77d7ce"
+              opacity=".07"
+              strokeDasharray="3 6"
+              fill="none"
+            />
+            <g transform={`translate(${x},${y}) rotate(${(vehicle.yaw_rad * 180) / Math.PI})`}>
+              <path d="M32 0L47 0M43 -4L47 0L43 4" stroke="#77d7ce" fill="none" opacity=".8" />
+              <rect x="-15" y="-10" width="5" height="3" rx="1" fill="#788a94" />
+              <rect x="-15" y="7" width="5" height="3" rx="1" fill="#788a94" />
+              <g transform={`translate(11,-9) rotate(${vehicle.steer_deg})`}>
+                <rect x="-3" y="-1.5" width="6" height="3" rx="1" fill="#e7ad7a" />
+              </g>
+              <g transform={`translate(11,9) rotate(${vehicle.steer_deg})`}>
+                <rect x="-3" y="-1.5" width="6" height="3" rx="1" fill="#e7ad7a" />
+              </g>
+              <rect
+                x="-20"
+                y="-8"
+                width="43"
+                height="16"
+                rx="5"
+                fill="#162c34"
+                stroke="#90ded5"
+                strokeWidth="1.5"
+              />
+              <path d="M7 -6H15L19 -3V3L15 6H7Z" fill="#6da6ae" opacity=".55" />
+              <path d="M-10 -6H-3V6H-10Z" fill="#476974" />
+              <path d="M22 -5V5" stroke="#ecf6ed" strokeWidth="2" />
+              <path d="M-19 -5V-2M-19 2V5" stroke="#d39471" strokeWidth="2" />
+            </g>
+            <path d={`M${x + 67} ${y - 38}l18 -18h65`} stroke="#668188" fill="none" />
+            <text x={x + 91} y={y - 63} fill="#b9d6d7" fontSize="10" fontFamily="monospace">
+              GW-01 / {vehicle.id.toUpperCase()}
+            </text>
+            <text x={x + 91} y={y - 47} fill="#6d8c95" fontSize="9" fontFamily="monospace">
+              {fmt(vehicle.speed_mps * 3.6)} KM/H
+            </text>
+          </>
+        )}
+        {!connected && (
+          <text x="400" y="280" fill="#89999f" fontSize="12" textAnchor="middle" letterSpacing="2">
+            AWAITING TELEMETRY
+          </text>
+        )}
+        <g transform="translate(718,72)">
+          <path
+            d="M0 -15V20M-5 11L0 20L5 11M-15 0H20M11 -5L20 0L11 5"
+            stroke="#94a6ac"
+            fill="none"
+          />
+          <text x="0" y="35" fill="#94a6ac" textAnchor="middle" fontSize="9" fontFamily="monospace">
+            +Y
+          </text>
+          <text x="27" y="4" fill="#61757e" fontSize="9" fontFamily="monospace">
+            +X
+          </text>
+        </g>
+        <path d={`M48 397v6h${30 * zoom}v-6`} stroke="#879aa2" fill="none" />
+        <text x="48" y="419" fill="#879aa2" fontSize="9" fontFamily="monospace">
+          10 METERS
+        </text>
+      </svg>
+      <div className="field-bottom">
+        <span>
+          X <b>{fmt(vehicle?.x_m, 2)}</b> m <span className="sep">/</span> Y{' '}
+          <b>{fmt(vehicle?.y_m, 2)}</b> m <span className="sep">/</span> YAW{' '}
+          <b>{fmt(vehicle ? (vehicle.yaw_rad * 180) / Math.PI : undefined)}</b>°
+        </span>
+        <div>
+          <button aria-label="Zoom out" onClick={() => setZoom((z) => clamp(z - 0.2, 0.4, 3))}>
+            <Minus size={13} />
+          </button>
+          <span>{Math.round(zoom * 100)}%</span>
+          <button aria-label="Zoom in" onClick={() => setZoom((z) => clamp(z + 0.2, 0.4, 3))}>
+            <Plus size={13} />
+          </button>
+          <button
+            className={follow ? 'selected' : ''}
+            aria-label="Toggle vehicle tracking"
+            title="Follow vehicle"
+            onClick={() => setFollow((v) => !v)}
+          >
+            <Crosshair size={15} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+export function SteeringWheel({ angle }: { angle: number }) {
+  return (
+    <svg viewBox="0 0 100 100" className="steering-wheel" aria-hidden="true">
+      <g transform={`rotate(${angle * 2} 50 50)`}>
+        <circle cx="50" cy="50" r="35" stroke="#7e929a" strokeWidth="5" fill="none" />
+        <path d="M17 41L43 47M83 41L57 47M50 58V85" stroke="#7e929a" strokeWidth="6" />
+        <circle cx="50" cy="50" r="12" fill="#18232b" stroke="#85c8c5" strokeWidth="1.5" />
+        <path d="M46 50H54M50 46V54" stroke="#85c8c5" />
+      </g>
+    </svg>
+  );
+}

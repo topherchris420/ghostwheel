@@ -7,6 +7,7 @@ flowchart LR
   UI[React operator console] -->|local authenticated HTTP| GW[Deterministic authorization gateway]
   GW --> ECU[Virtual steering ECU state machines]
   ECU --> MODEL[Independent original vehicle models]
+  MODEL -.->|authenticated WebSocket push| UI
   MODEL --> CAN[Synthetic CAN telemetry]
   MODEL --> DB[(SQLite event ledger)]
   DB --> REPLAY[Verified read-only playback and builtin recomputation]
@@ -19,6 +20,8 @@ flowchart LR
 ```
 
 Tauri owns the child Python process, selects a fresh launch secret and gets the assigned loopback port through the private ready pipe. The frontend receives connection details through one narrow Tauri command. In packaged desktop mode, all data endpoints require the launch secret. Health contains no secret. Browser development uses fixed port 8765 and locally bootstrapped credentials.
+
+Live state reaches the UI over a WebSocket at `/api/stream`. It is a dependency-free RFC 6455 implementation in `server.py`, so the frozen sidecar still has no third-party runtime packages. Browsers apply no CORS to WebSockets and cannot attach `X-Ghostwheel-Token` to the handshake. The stream therefore goes through the same Host and Origin allowlist as every other route, which is what stops another web page from opening it. The client's first message must be `{"type":"auth","token":...}`, compared in constant time. Without it the server closes with 1008 and sends nothing. Client frames must be masked and unfragmented, and are capped at 1 KiB. The Tauri CSP allows `ws://127.0.0.1:*` alongside the existing loopback HTTP origin.
 
 All server mutations require `X-Ghostwheel-Token`. HTTP checks exact Host and an explicit origin list; response CORS never uses a wildcard. Strict JSON rejects duplicate keys, nonfinite numeric exponents, invalid media types and bodies above 8 KiB. No physical transport module is imported. [Implementation: `src-tauri/src/main.rs`, `backend/ghostwheel/server.py`; evidence: HTTP boundary tests in `tests/test_system.py`.]
 
@@ -70,7 +73,7 @@ CARLA recording supports chain-verified playback only. It does not claim builtin
 
 ## Timing and experiment metrics
 
-The simulation advances fixed `dt=0.05 s` steps. The interactive host attempts one step every 50 ms, drops wall-clock catch-up rather than expanding physics dt, and is not a real-time controller. The UI polls and sends controls around 10 Hz. The command lease is based on simulation ticks.
+The simulation advances fixed `dt=0.05 s` steps. The interactive host attempts one step every 50 ms, drops wall-clock catch-up rather than expanding physics dt, and is not a real-time controller. The server pushes a snapshot on every tick (20 Hz) and after every accepted mutation, so the UI sees each tick rather than sampling every other one. A one-second re-check catches any change that was not published, and identical snapshots are not re-sent. The UI still sends controls over `POST /api/control` around 10 Hz, keeping the strict JSON validation and recording path. If the stream is unavailable, the UI falls back to polling `/api/state` at 10 Hz and reconnects with backoff up to 5 s; the top bar shows PUSH or POLL. The command lease is based on simulation ticks.
 
 `gateway_ms` is elapsed `perf_counter_ns` wall time surrounding validation and state application. It excludes HTTP transport, SQLite recording, rendering and physical response. P95 uses sorted observed samples with index `min(n-1, floor(0.95*n))`. Tracking RMSE is `sqrt(mean((target_angle-model_angle)^2))` sampled every physics tick.
 
@@ -83,6 +86,7 @@ Each baseline is 160 ticks / 8 simulated seconds, with 80 valid commands and a 0
 | GET `/api/health` | App/version, simulation-only flag, degraded-state reason |
 | GET `/api/bootstrap` | Session, credential, profiles, finite scenario inventory, current snapshot |
 | GET `/api/state` | Current state, metrics, virtual ECU/frame/event streams |
+| GET `/api/stream` | WebSocket upgrade; first message authenticates, then `{"type":"snapshot"}` pushes on every change |
 | POST `/api/control` | Typed simulator-only control, explicit accepted/reason decision |
 | POST `/api/reset` | Seed/profile validation, fresh session and recording |
 | POST `/api/stop` | Explicit simulator safe stop |
@@ -102,7 +106,7 @@ No endpoint accepts a vehicle network address, OEM CAN write, arbitrary simulato
 
 ## Acceptance evidence and limits
 
-The final verification receipt names the tested backend/test source hashes and host. The exact Python-run receipt is preserved as `python-test-run.json`; final frontend identities and its separately scoped QA receipts are retained alongside it. `source-manifest.json` identifies the final original source and configuration. The source tests cover validation boundary conditions, forward/repeated sequence rejection, three independent vehicles, finite numeric handling, per-tick slew limits, ECU disagreement, watchdog state, HTTP origins/Host/authentication, record corruption, recording-failure latch, a mocked CARLA SDK contract, and the connector boundary: refusal of non-simulation transports, factory-smuggling defence, SIL determinism and digest parity with builtin, chain-verified SIL replay, connector failure latching and the connector HTTP surface. The Windows build receipt and UI QA evidence document separate packaging and interaction checks.
+The final verification receipt names the tested backend/test source hashes and host. The exact Python-run receipt is preserved as `python-test-run.json`; final frontend identities and its separately scoped QA receipts are retained alongside it. `source-manifest.json` identifies the final original source and configuration. The source tests cover validation boundary conditions, forward/repeated sequence rejection, three independent vehicles, finite numeric handling, per-tick slew limits, ECU disagreement, watchdog state, HTTP origins/Host/authentication, record corruption, recording-failure latch, a mocked CARLA SDK contract, and the connector boundary: refusal of non-simulation transports, factory-smuggling defence, SIL determinism and digest parity with builtin, chain-verified SIL replay, connector failure latching and the connector HTTP surface. Stream tests use a raw-socket client and cover the RFC 6455 accept key, foreign-Origin refusal, close 1008 with no snapshot for a wrong token, a push after each control and stop, the echoed close, and a 1001 close on shutdown. The Windows build receipt and UI QA evidence document separate packaging and interaction checks.
 
 The desktop process-tree cleanup does not guarantee external CARLA actor/settings cleanup after abrupt exit. Explicitly disconnect before closing; reset the external simulator if a crash leaves an actor. This is a design limitation awaiting running-server lifecycle validation.
 

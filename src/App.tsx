@@ -21,7 +21,7 @@ import Forensics from './Forensics';
 import Protocol from './Protocol';
 export default function App() {
   const m = useConsole();
-  const { tab, snapshot, connected, busy, replay, error, notice } = m;
+  const { tab, snapshot, connected, streaming, busy, replay, error, notice } = m;
   const navItems: { id: Tab; label: string; icon: typeof ScanLine; code: string }[] = [
     { id: 'operations', label: 'Operations', icon: ScanLine, code: '01' },
     { id: 'research', label: 'Research lab', icon: FlaskConical, code: '02' },
@@ -72,6 +72,18 @@ export default function App() {
             <span className="environment-chip">
               <span className={connected ? 'dot cyan' : 'dot red'} />
               {connected ? 'SIMULATION LINK ACTIVE' : 'SIMULATION OFFLINE'}
+              {connected && (
+                <span
+                  className="link-transport"
+                  title={
+                    streaming
+                      ? 'Live state pushed over a WebSocket'
+                      : 'WebSocket unavailable; polling over HTTP'
+                  }
+                >
+                  {streaming ? 'PUSH' : 'POLL'}
+                </span>
+              )}
             </span>
             <span className="topbar-divider" />
             <span className="mono tiny muted">AUTOMOTIVE CYBER-PHYSICAL RESEARCH</span>

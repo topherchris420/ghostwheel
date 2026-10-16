@@ -319,6 +319,14 @@ button svg {
 .environment-chip .cyan {
   box-shadow: 0 0 10px #79d5cd60;
 }
+.link-transport {
+  font-size: 7px;
+  letter-spacing: 0.8px;
+  padding: 2px 5px;
+  border: 1px solid #2d4948;
+  background: #152525;
+  color: #84bdb7;
+}
 .topbar-divider {
   height: 20px;
   width: 1px;

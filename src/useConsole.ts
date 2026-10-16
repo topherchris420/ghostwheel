@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { bootstrap, discoverBackend, request, setToken } from './api';
+import { bootstrap, discoverBackend, openStream, request, setToken } from './api';
 import { clamp, saveJson } from './components';
 import type { Bootstrap, ExperimentReport, HistoryPoint, Replay, Run, Snapshot } from './types';
 export type Tab = 'operations' | 'research' | 'forensics' | 'protocol';
+// The steering chart shows a fixed window of simulation time, independent of update rate.
+const HISTORY_SECONDS = 24;
 export function useConsole() {
   const [tab, setTab] = useState<Tab>('operations'),
     [boot, setBoot] = useState<Bootstrap | null>(null),
@@ -28,13 +30,15 @@ export function useConsole() {
     [heldFrames, setHeldFrames] = useState<Snapshot['can_frames']>([]),
     [carla, setCarla] = useState<{ available: boolean; connected: boolean; reason: string } | null>(
       null,
-    );
+    ),
+    [streaming, setStreaming] = useState(false);
   const liveRef = useRef(live),
     bootRef = useRef(boot),
     controlsRef = useRef({ steer, throttle, brake });
   const sequence = useRef(0),
     lastControlTick = useRef(0),
-    pollBusy = useRef(false);
+    pollBusy = useRef(false),
+    streamingRef = useRef(false);
   liveRef.current = live;
   bootRef.current = boot;
   controlsRef.current = { steer, throttle, brake };
@@ -71,27 +75,61 @@ export function useConsole() {
     }, 3500);
     return () => clearInterval(retry);
   }, [connect]);
+  const ingest = useCallback((state: Snapshot) => {
+    setLive(state);
+    setConnected(true);
+    setHistory((points) => {
+      const last = points.at(-1);
+      if (last?.time === state.sim_time) return points;
+      const point = {
+        time: state.sim_time,
+        steer: state.vehicle.steer_deg,
+        target: state.vehicle.target_steer_deg,
+        speed: state.vehicle.speed_mps * 3.6,
+        latency: state.metrics.p95_gateway_ms,
+      };
+      // Simulation time running backwards means a new run: start the chart over.
+      if (last && state.sim_time < last.time) return [point];
+      return [...points, point].filter((p) => p.time > state.sim_time - HISTORY_SECONDS);
+    });
+  }, []);
+  // Live state is pushed over a WebSocket; the reconnect delay backs off to 5 s.
+  const token = boot?.token;
+  useEffect(() => {
+    if (!token) return;
+    let socket: WebSocket | undefined,
+      retry: ReturnType<typeof setTimeout> | undefined,
+      attempts = 0,
+      disposed = false;
+    const open = () => {
+      socket = openStream(
+        (state) => {
+          attempts = 0;
+          streamingRef.current = true;
+          setStreaming(true);
+          ingest(state);
+        },
+        () => {
+          streamingRef.current = false;
+          setStreaming(false);
+          if (!disposed) retry = setTimeout(open, Math.min(5000, 250 * 2 ** attempts++));
+        },
+      );
+    };
+    open();
+    return () => {
+      disposed = true;
+      clearTimeout(retry);
+      socket?.close();
+    };
+  }, [token, ingest]);
+  // HTTP polling is the fallback while the stream is down, so the console keeps working.
   useEffect(() => {
     const id = setInterval(async () => {
-      if (!bootRef.current || pollBusy.current) return;
+      if (!bootRef.current || pollBusy.current || streamingRef.current) return;
       pollBusy.current = true;
       try {
-        const state = await request<Snapshot>('/api/state');
-        setLive(state);
-        setConnected(true);
-        setHistory((points) => {
-          if (points.at(-1)?.time === state.sim_time) return points;
-          return [
-            ...points,
-            {
-              time: state.sim_time,
-              steer: state.vehicle.steer_deg,
-              target: state.vehicle.target_steer_deg,
-              speed: state.vehicle.speed_mps * 3.6,
-              latency: state.metrics.p95_gateway_ms,
-            },
-          ].slice(-240);
-        });
+        ingest(await request<Snapshot>('/api/state'));
       } catch (e) {
         setConnected(false);
         setArmed(false);
@@ -101,7 +139,7 @@ export function useConsole() {
       }
     }, 100);
     return () => clearInterval(id);
-  }, []);
+  }, [ingest]);
   useEffect(() => {
     if (!armed || !connected || replay) return;
     let sending = false;
@@ -167,7 +205,7 @@ export function useConsole() {
   }, []);
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement;
+      const target = e.target instanceof Element ? e.target : null;
       if (e.code === 'Space' && tab === 'operations' && !replay) {
         e.preventDefault();
         void safeStop();
@@ -371,6 +409,7 @@ export function useConsole() {
     live,
     snapshot,
     connected,
+    streaming,
     error,
     setError,
     notice,

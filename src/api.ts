@@ -1,4 +1,4 @@
-﻿import type { Bootstrap } from './types';
+﻿import type { Bootstrap, Snapshot } from './types';
 let base = 'http://127.0.0.1:8765';
 let token = '';
 export async function discoverBackend() {
@@ -31,4 +31,16 @@ export async function bootstrap() {
 }
 export function setToken(value: string) {
   token = value;
+}
+// Live state is pushed over a WebSocket. Browsers cannot attach X-Ghostwheel-Token to the
+// handshake, so the token is the first message; the server closes with 1008 otherwise.
+export function openStream(onSnapshot: (state: Snapshot) => void, onClose: () => void) {
+  const socket = new WebSocket(`${base.replace(/^http/, 'ws')}/api/stream`);
+  socket.onopen = () => socket.send(JSON.stringify({ type: 'auth', token }));
+  socket.onmessage = (event: MessageEvent<string>) => {
+    const message = JSON.parse(event.data) as { type: string; snapshot?: Snapshot };
+    if (message.type === 'snapshot' && message.snapshot) onSnapshot(message.snapshot);
+  };
+  socket.onclose = onClose;
+  return socket;
 }

@@ -199,6 +199,66 @@ class LedgerTests(unittest.TestCase):
             recorder.close()
 
 
+class WsClient:
+    """Minimal raw-socket RFC 6455 client, so the tests exercise the wire protocol itself."""
+    SAMPLE_KEY = 'dGhlIHNhbXBsZSBub25jZQ=='  # RFC 6455 section 1.3 worked example
+
+    def __init__(self, port, origin=None):
+        import socket
+        self.sock = socket.create_connection(('127.0.0.1', port), timeout=5)
+        lines = ['GET /api/stream HTTP/1.1', f'Host: 127.0.0.1:{port}', 'Upgrade: websocket',
+                 'Connection: Upgrade', f'Sec-WebSocket-Key: {self.SAMPLE_KEY}', 'Sec-WebSocket-Version: 13']
+        if origin:
+            lines.append(f'Origin: {origin}')
+        self.sock.sendall(('\r\n'.join(lines) + '\r\n\r\n').encode())
+        self.buffer = b''
+        while b'\r\n\r\n' not in self.buffer:
+            chunk = self.sock.recv(4096)
+            if not chunk:
+                break
+            self.buffer += chunk
+        head, _, self.buffer = self.buffer.partition(b'\r\n\r\n')
+        self.status_line, *header_lines = head.decode().split('\r\n')
+        self.headers = dict(line.split(': ', 1) for line in header_lines)
+
+    def send(self, opcode, payload):
+        mask = b'\x37\xfa\x21\x3d'
+        self.sock.sendall(bytes((0x80 | opcode, 0x80 | len(payload))) + mask
+                          + bytes(byte ^ mask[index % 4] for index, byte in enumerate(payload)))
+
+    def send_json(self, value):
+        self.send(0x1, json.dumps(value).encode())
+
+    def _exact(self, count):
+        while len(self.buffer) < count:
+            chunk = self.sock.recv(65536)
+            if not chunk:
+                raise ConnectionError('closed')
+            self.buffer += chunk
+        data, self.buffer = self.buffer[:count], self.buffer[count:]
+        return data
+
+    def receive(self):
+        import struct
+        first, second = self._exact(2)
+        length = second & 0x7F
+        if length == 126:
+            length = struct.unpack('!H', self._exact(2))[0]
+        elif length == 127:
+            length = struct.unpack('!Q', self._exact(8))[0]
+        return first & 0x0F, self._exact(length)
+
+    def snapshot(self):
+        opcode, payload = self.receive()
+        assert opcode == 0x1, f'expected text frame, got opcode {opcode}'
+        message = json.loads(payload)
+        assert message['type'] == 'snapshot'
+        return message['snapshot']
+
+    def close(self):
+        self.sock.close()
+
+
 class HttpBoundaryTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -291,6 +351,51 @@ class HttpBoundaryTests(unittest.TestCase):
         self.assertIsNone(self.app.world.external_adapter)
         self.assertEqual(self.request('POST', '/api/carla/connect', '{"blueprint":"vehicle.real.car"}')[1]['error'],
                          'unsupported_simulator_blueprint')
+
+    def test_stream_rejects_foreign_origin_plain_get_and_bad_token(self):
+        foreign = WsClient(self.port, origin='https://untrusted.test')
+        self.assertIn(' 403 ', foreign.status_line)
+        foreign.close()
+        status, payload, _ = self.request('GET', '/api/stream')
+        self.assertEqual((status, payload['error']), (400, 'websocket_upgrade_required'))
+        client = WsClient(self.port, origin='http://127.0.0.1:1420')
+        self.assertEqual(client.status_line, 'HTTP/1.1 101 Switching Protocols')
+        self.assertEqual(client.headers['Sec-WebSocket-Accept'], 's3pPLMBiTxaQ9kYGzzhZRbK+xOo=')
+        client.send_json({'type': 'auth', 'token': 'wrong'})
+        opcode, payload = client.receive()  # no snapshot may precede authentication
+        self.assertEqual(opcode, 0x8)
+        self.assertEqual(int.from_bytes(payload[:2], 'big'), 1008)
+        client.close()
+
+    def test_stream_pushes_state_after_each_change_and_echoes_close(self):
+        client = WsClient(self.port, origin='http://127.0.0.1:1420')
+        client.send_json({'type': 'auth', 'token': self.app.token})
+        first = client.snapshot()
+        self.assertEqual((first['tick'], first['connector'], first['metrics']['accepted']), (0, 'builtin', 0))
+        command = self.app.world.make_command(throttle=0.3)
+        self.assertTrue(self.request('POST', '/api/control', json.dumps(command))[1]['accepted'])
+        pushed = client.snapshot()
+        self.assertEqual(pushed['metrics']['accepted'], 1)
+        self.assertEqual(pushed['vehicle']['throttle'], 0.3)
+        self.request('POST', '/api/stop', '{}')
+        stopped = client.snapshot()
+        self.assertTrue(stopped['vehicle']['failsafe'])
+        self.assertEqual(stopped['vehicle']['brake'], 0.7)
+        client.send(0x8, (1000).to_bytes(2, 'big'))
+        opcode, payload = client.receive()
+        self.assertEqual((opcode, int.from_bytes(payload[:2], 'big')), (0x8, 1000))
+        client.close()
+
+    def test_stream_says_going_away_on_shutdown(self):
+        client = WsClient(self.port)
+        client.send_json({'type': 'auth', 'token': self.app.token})
+        client.snapshot()
+        self.app.stop_event.set()
+        with self.app.lock:
+            self.app.changed.notify_all()
+        opcode, payload = client.receive()
+        self.assertEqual((opcode, int.from_bytes(payload[:2], 'big')), (0x8, 1001))
+        client.close()
 
 
 class EcuAndAdapterTests(unittest.TestCase):

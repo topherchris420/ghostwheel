@@ -2,11 +2,15 @@
 from __future__ import annotations
 
 import argparse
+import base64
+import hashlib
 import hmac
 import json
 import math
 import os
 import secrets
+import select
+import struct
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -25,6 +29,56 @@ from .recorder import Recorder, IntegrityError
 ALLOWED_ORIGINS = frozenset(('http://127.0.0.1:1420', 'http://localhost:1420', 'http://tauri.localhost', 'https://tauri.localhost', 'tauri://localhost'))
 MAX_BODY = 8192
 MAX_RECORDED_TICKS = 8000
+WS_GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11'
+MAX_WS_CLIENT_FRAME = 1024
+WS_AUTH_TIMEOUT_S = 3
+WS_SEND_TIMEOUT_S = 10
+
+
+def ws_frame(opcode, payload=b''):
+    """One unmasked, unfragmented server frame (RFC 6455 section 5.2)."""
+    length = len(payload)
+    if length < 126:
+        header = struct.pack('!BB', 0x80 | opcode, length)
+    elif length < 1 << 16:
+        header = struct.pack('!BBH', 0x80 | opcode, 126, length)
+    else:
+        header = struct.pack('!BBQ', 0x80 | opcode, 127, length)
+    return header + payload
+
+
+def recv_exact(sock, count):
+    data = bytearray()
+    while len(data) < count:
+        chunk = sock.recv(count - len(data))
+        if not chunk:
+            raise ConnectionError('websocket_closed')
+        data += chunk
+    return bytes(data)
+
+
+def ws_read_frame(sock):
+    """Read one client frame from the raw socket as (opcode, payload).
+
+    Clients must mask and must not fragment. The raw socket is used rather than the
+    handler's buffered rfile, which cannot survive a timeout and blocks close().
+    """
+    def exact(count):
+        return recv_exact(sock, count)
+    first, second = exact(2)
+    if not first & 0x80 or first & 0x70:
+        raise ConnectionError('websocket_fragment_or_extension_unsupported')
+    if not second & 0x80:
+        raise ConnectionError('websocket_client_frame_unmasked')
+    length = second & 0x7F
+    if length == 126:
+        length = struct.unpack('!H', exact(2))[0]
+    elif length == 127:
+        length = struct.unpack('!Q', exact(8))[0]
+    if length > MAX_WS_CLIENT_FRAME:
+        raise ConnectionError('websocket_frame_too_large')
+    mask = exact(4)
+    return first & 0x0F, bytes(byte ^ mask[index % 4] for index, byte in enumerate(exact(length)))
 
 
 class Application:
@@ -33,6 +87,9 @@ class Application:
         self.desktop = desktop
         self.world = World(capability=self.token)
         self.lock = threading.RLock()
+        # Live-state streams wait on this; ``version`` increments on every observable change.
+        self.changed = threading.Condition(self.lock)
+        self.version = 0
         self.recorder = Recorder(db_path)
         self.recorder.begin(self.world)
         self.output_dir = Path(output_dir or Path(db_path).parent / 'experiments')
@@ -47,6 +104,11 @@ class Application:
                 'scenarios': list(SCENARIOS), 'dt': DT,
                 'connectors': connectors.list_connectors(), 'connector': self.world.connector_id,
                 'snapshot': self.world.snapshot(self.recorder.run_id)}
+
+    def publish(self):
+        """Wake live-state streams. The caller holds ``self.lock``."""
+        self.version += 1
+        self.changed.notify_all()
 
     def latch_adapter_failure(self):
         if self.world.last_adapter_error:
@@ -87,6 +149,7 @@ class Application:
         while not self.stop_event.is_set():
             next_tick += DT
             with self.lock:
+                before = (self.world, self.world.tick, self.fatal_error)
                 try:
                     self.latch_adapter_failure()
                     if self.world.tick >= MAX_RECORDED_TICKS:
@@ -102,6 +165,8 @@ class Application:
                     self.world.paused = True
                     for vehicle in self.world.vehicles.values():
                         vehicle.safe_stop()
+                if (self.world, self.world.tick, self.fatal_error) != before:
+                    self.publish()
             delay = next_tick - time.perf_counter()
             if delay < -DT:
                 # Never enlarge the physics step or replay a burst of catch-up commands.
@@ -122,11 +187,15 @@ class Application:
                 for vehicle in self.world.vehicles.values():
                     vehicle.safe_stop()
                 self.fatal_error = 'command_recording_failed_safe_stop'
+                self.publish()
                 raise
+            self.publish()
             return result
 
     def close(self):
         self.stop_event.set()
+        with self.lock:
+            self.changed.notify_all()  # streams send "going away" and exit
         if self.thread:
             self.thread.join(timeout=7)
         with self.lock:
@@ -208,6 +277,9 @@ class Handler(BaseHTTPRequestHandler):
         if not self._allowed():
             return
         parsed = urlsplit(self.path)
+        if parsed.path == '/api/stream':
+            self._stream()
+            return
         if self.app.desktop and parsed.path != '/api/health':
             supplied = self.headers.get('X-Ghostwheel-Token', '')
             if not hmac.compare_digest(supplied.encode('utf-8'), self.app.token.encode('utf-8')):
@@ -246,6 +318,97 @@ class Handler(BaseHTTPRequestHandler):
             self._json(409, {'error': str(error), 'verified': False})
         except Exception as error:
             self._json(500, {'error': f'{type(error).__name__}: {error}'})
+
+    def _stream(self):
+        """Push live snapshots over a WebSocket, replacing HTTP polling.
+
+        Browsers cannot attach X-Ghostwheel-Token to a WebSocket handshake, so the
+        client's first message must carry the launch token. Host and Origin were
+        already checked by _allowed(); browsers apply no CORS to WebSockets, so that
+        check is what stops another web page from opening this socket.
+        """
+        key = self.headers.get('Sec-WebSocket-Key', '')
+        try:
+            key_ok = len(base64.b64decode(key, validate=True)) == 16
+        except ValueError:
+            key_ok = False
+        if not (key_ok and self.headers.get('Upgrade', '').lower() == 'websocket'
+                and 'upgrade' in self.headers.get('Connection', '').lower()
+                and self.headers.get('Sec-WebSocket-Version') == '13'):
+            self._json(400, {'error': 'websocket_upgrade_required'})
+            return
+        accept = base64.b64encode(hashlib.sha1((key + WS_GUID).encode()).digest()).decode()
+        self.close_connection = True
+        sock = self.connection
+        send_lock = threading.Lock()
+
+        def send(opcode, payload=b''):
+            with send_lock:
+                sock.sendall(ws_frame(opcode, payload))
+
+        try:
+            sock.sendall(('HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\n'
+                          f'Connection: Upgrade\r\nSec-WebSocket-Accept: {accept}\r\n\r\n').encode())
+            # A client cannot send frames before it receives 101, so rfile holds no frame bytes.
+            sock.settimeout(WS_AUTH_TIMEOUT_S)
+            opcode, data = ws_read_frame(sock)
+            message = json.loads(data.decode('utf-8')) if opcode == 0x1 else None
+            supplied = message.get('token') if isinstance(message, dict) and message.get('type') == 'auth' else None
+            if not isinstance(supplied, str) or not hmac.compare_digest(
+                    supplied.encode('utf-8'), self.app.token.encode('utf-8')):
+                send(0x8, struct.pack('!H', 1008) + b'transport_unauthorized')
+                return
+            # Bounds a send to a client that stopped reading; the stream then ends and it reconnects.
+            sock.settimeout(WS_SEND_TIMEOUT_S)
+        except (OSError, ValueError):
+            return  # timeout, disconnect, malformed frame or JSON before authentication
+        closed = threading.Event()
+
+        def read_until_close():
+            try:
+                while not closed.is_set() and not self.app.stop_event.is_set():
+                    if not select.select([sock], [], [], 1.0)[0]:
+                        continue
+                    opcode, data = ws_read_frame(sock)
+                    if opcode == 0x8:
+                        return
+                    if opcode == 0x9:
+                        send(0xA, data)
+            except (OSError, ValueError):
+                pass
+            finally:
+                closed.set()
+                with self.app.changed:
+                    self.app.changed.notify_all()
+
+        threading.Thread(target=read_until_close, name='gw-stream-reader', daemon=True).start()
+        version, sent, code = None, None, 1000
+        try:
+            while True:
+                with self.app.changed:
+                    self.app.changed.wait_for(lambda: self.app.version != version or closed.is_set()
+                                              or self.app.stop_event.is_set(), timeout=1.0)
+                    if closed.is_set() or self.app.stop_event.is_set():
+                        break
+                    version = self.app.version
+                    payload = canonical({'type': 'snapshot',
+                                         'snapshot': self.app.world.snapshot(self.app.recorder.run_id)}).encode()
+                # The timeout re-check catches any change that was not published; repeats are skipped.
+                if payload != sent:
+                    send(0x1, payload)
+                    sent = payload
+            if self.app.stop_event.is_set():
+                code = 1001
+        except (TypeError, ValueError):
+            code = 1011  # a snapshot could not be serialized
+        except OSError:
+            return
+        finally:
+            closed.set()  # the reader thread exits within its select interval
+        try:
+            send(0x8, struct.pack('!H', code))
+        except OSError:
+            pass
 
     def _body(self):
         if self.headers.get('Transfer-Encoding'):
@@ -365,6 +528,7 @@ class Handler(BaseHTTPRequestHandler):
                 else:
                     self._json(404, {'error': 'not_found'})
                     return
+                self.app.publish()
             self._json(200, result)
         except (ValueError, TypeError, UnicodeError) as error:
             if urlsplit(self.path).path == '/api/control' and not self.app.fatal_error:

@@ -155,6 +155,34 @@ int main() {
              standstill_to_engage_precondition_met(e), "alias_consistent");
   }
 
+  // 15. Asynchronous PACMod reports must disagree continuously for 150 ms
+  //     before becoming an active mismatch. Agreement and stale samples reset
+  //     the timer; the outer fault latch is intentionally separate.
+  {
+    using Debounce = ghostwheel::EnableReportMismatchDebounce;
+    using Clock = std::chrono::steady_clock;
+    const auto base = Clock::time_point{};
+    Debounce mismatch;
+    expect(!mismatch.update(false, false, true, true, base),
+           "missing_global_report_no_mismatch");
+    expect(!mismatch.update(true, false, true, true, base),
+           "first_disagreement_not_fault");
+    expect(!mismatch.update(true, false, true, true, base + std::chrono::milliseconds(149)),
+           "brief_disagreement_not_fault");
+    expect(mismatch.update(true, false, true, true, base + std::chrono::milliseconds(150)),
+           "persistent_disagreement_fault");
+    expect(!mismatch.update(true, true, true, true, base + std::chrono::milliseconds(160)),
+           "agreement_clears_active_mismatch");
+    expect(!mismatch.update(true, false, true, true, base + std::chrono::milliseconds(170)),
+           "new_disagreement_starts_new_window");
+    expect(!mismatch.update(true, false, false, true, base + std::chrono::milliseconds(330)),
+           "stale_enable_report_resets_debounce");
+    expect(!mismatch.update(true, false, true, true, base + std::chrono::milliseconds(340)),
+           "fresh_disagreement_starts_from_zero");
+    expect(mismatch.update(true, false, true, true, base + std::chrono::milliseconds(490)),
+           "persistent_new_disagreement_fault");
+  }
+
   // Any single failed expectation aborts with a distinct non-zero code so CI
   // logs identify the broken contract category.
   return failures == 0 ? 0 : 1;

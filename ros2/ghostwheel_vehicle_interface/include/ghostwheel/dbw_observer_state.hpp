@@ -10,7 +10,43 @@
 // commands a vehicle. The helpers are pure functions with no ROS, socket or
 // device dependencies so they can be unit-tested without a robot.
 
+#include <chrono>
+
 namespace ghostwheel {
+
+// The two PACMod enable reports are asynchronous. Treat disagreement as an
+// active fault only after both inputs remain fresh and disagree for a full
+// dwell interval. Historical disagreements are held by the observer's separate
+// software fault latch, not by this debounce helper.
+class EnableReportMismatchDebounce {
+ public:
+  using TimePoint = std::chrono::steady_clock::time_point;
+
+  explicit EnableReportMismatchDebounce(
+    std::chrono::milliseconds dwell = std::chrono::milliseconds(150)) noexcept
+    : dwell_(dwell) {}
+
+  bool update(bool global_fresh, bool global_enabled,
+              bool enabled_fresh, bool enabled,
+              TimePoint now) noexcept {
+    if (!global_fresh || !enabled_fresh || global_enabled == enabled) {
+      pending_ = false;
+      return false;
+    }
+    if (!pending_ || now < since_) {
+      pending_ = true;
+      since_ = now;
+      return false;
+    }
+    return now - since_ >= dwell_;
+  }
+
+ private:
+  std::chrono::milliseconds dwell_;
+  TimePoint since_{};
+  bool pending_{false};
+};
+
 
 enum class ObservedControlMode { NOT_READY, DISENGAGED, MANUAL, AUTONOMOUS };
 

@@ -239,6 +239,7 @@ class Pacmod3Observer final : public rclcpp::Node {
         std::shared_ptr<std_srvs::srv::Trigger::Response> response) {
         std::lock_guard<std::mutex> lock(mutex_);
         const auto current = Clock::now();
+        update_enable_mismatch_locked(current);
         auto observed = observation_locked(current);
         observed.fault_latched = false;
         if (!recovery_enabled_ || !fault_reason_locked(current).empty() ||
@@ -270,6 +271,14 @@ class Pacmod3Observer final : public rclcpp::Node {
       reason.c_str());
   }
 
+  void update_enable_mismatch_locked(TimePoint now) {
+    enable_mismatch_ = enable_mismatch_debounce_.update(
+      global_.fresh(now, report_timeout_),
+      global_.seen && global_.value.enabled,
+      enabled_rpt_.fresh(now, report_timeout_),
+      enabled_rpt_.seen && enabled_rpt_.value.data, now);
+  }
+
   DbwObservation observation_locked(TimePoint now) const {
     DbwObservation e;
     e.global_fresh = global_.fresh(now, report_timeout_);
@@ -279,13 +288,8 @@ class Pacmod3Observer final : public rclcpp::Node {
       global_.value.brake_can_timeout || global_.value.subsystem_can_timeout ||
       global_.value.vehicle_can_timeout || global_.value.pacmod_sys_fault_active ||
       global_.value.config_fault_active);
-    // Cross-check the kit's authoritative enable topic when it is available.
-    // A disagreement between /pacmod/global_rpt.enabled and /pacmod/enabled is
-    // itself a fault: both sources must agree before we call the kit ready.
-    if (enabled_rpt_.fresh(now, report_timeout_) &&
-        enabled_rpt_.value.data != e.global_enabled) {
-      enable_mismatch_ = true;
-    }
+    // The timer debounces disagreement between separately delivered reports.
+    // The software fault latch keeps any confirmed mismatch until acknowledged.
     if (enable_mismatch_) e.global_fault = true;
     e.override_active = global_.seen && global_.value.override_active;
     e.accel_fresh = accel_.fresh(now, report_timeout_);
@@ -349,6 +353,7 @@ class Pacmod3Observer final : public rclcpp::Node {
   void on_tick() {
     std::lock_guard<std::mutex> lock(mutex_);
     const auto now_steady = Clock::now();
+    update_enable_mismatch_locked(now_steady);
     const std::string current_fault = fault_reason_locked(now_steady);
     if (!current_fault.empty()) {
       latch_fault_locked(current_fault);
@@ -447,6 +452,7 @@ class Pacmod3Observer final : public rclcpp::Node {
   bool command_invalid_{false};
   bool command_seen_{false};
   bool enable_mismatch_{false};
+  EnableReportMismatchDebounce enable_mismatch_debounce_;
   TimePoint command_at_{};
   std::string latched_reason_;
   std::string published_fault_;

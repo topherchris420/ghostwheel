@@ -193,12 +193,14 @@ class DataspeedObserver final : public rclcpp::Node {
       [this](autoware_control_msgs::msg::Control::ConstSharedPtr msg) {
         std::lock_guard<std::mutex> lock(mutex_);
         const double acc = msg->longitudinal.acceleration;
+        const double speed = msg->longitudinal.velocity;
         const double steering = msg->lateral.steering_tire_angle;
         const double rate = msg->lateral.steering_tire_rotation_rate;
         const rclcpp::Time stamp(msg->stamp);
         const double age = (now() - stamp).seconds();
         const bool valid = stamp.nanoseconds() != 0 && finite(age) &&
-          age >= -0.1 && age <= 0.25 && finite(acc) && finite(steering) &&
+          age >= -0.1 && age <= 0.25 && finite(acc) && finite(speed) &&
+          finite(steering) &&
           acc <= max_accel_ && acc >= -max_decel_ &&
           (!msg->lateral.is_defined_steering_tire_rotation_rate ||
             (finite(rate) && std::fabs(rate) <= max_steer_rate_));
@@ -223,7 +225,10 @@ class DataspeedObserver final : public rclcpp::Node {
         std::shared_ptr<std_srvs::srv::Trigger::Response> response) {
         std::lock_guard<std::mutex> lock(mutex_);
         const auto current = Clock::now();
-        const auto e = observation_locked(current);
+        auto e = observation_locked(current);
+        // The existing software latch must not prevent assessing recovery.
+        // All live report health, E-stop, and stationary checks still apply.
+        e.fault_latched = false;
         if (!recovery_enabled_ || !fault_reason_locked(current).empty() ||
             !standstill_to_engage_precondition_met(e) || command_invalid_) {
           response->success = false;

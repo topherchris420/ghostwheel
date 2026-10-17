@@ -110,13 +110,15 @@ steering sign/ratio, units and enable sequences require model-specific tests.
 ## Dataspeed DBW observation adapter (optional, read-only)
 
 The standalone `ghostwheel_dataspeed_adapter` executable implements the same
-contract for **Option B (Dataspeed DBW)**. It builds whenever ROS 2/Autoware
-dependencies are present: it prefers the vendor message package
-[`dataspeed_dbw_msgs`](https://github.com/DataspeedInc/dataspeed_dbw_msgs); if
-that package is absent, CMake generates the field-compatible report mirrors in
-`msg/` (see `msg/README.md`) and aliases them to the vendor type names, so the
-same source compiles either way. No command messages are mirrored — the
-adapter has no command publisher at all.
+passive observation contract for **Option B (Dataspeed DBW)**. It is built
+**only when the native `dataspeed_dbw_msgs` package is installed** in the
+sourced ROS/Autoware workspace and its exact message API is compatible.
+Without the vendor package, the core simulator and other optional adapters
+still build, but the Dataspeed node is unavailable. Local look-alike
+`.msg` files cannot subscribe to vendor ROS topics: changing a topic name
+does not change its ROS type identity. Confirm the actual vendor message
+definitions and topic names for your DBW model before use. This repository
+has not validated the adapter on physical hardware.
 
 Like the PACMod3 adapter, this node uses the shared kit-independent decision
 model in `include/ghostwheel/dbw_observer_state.hpp`, so engagement, control

@@ -47,11 +47,13 @@ jobs:
               exit 1
             fi
           done
-      - name: Verify message mirrors contain no command interfaces
+      - name: Reject incompatible vendor message mirrors
         run: |
-          # msg/ mirrors report topics only; a *Cmd mirror must never appear.
-          if ls ros2/ghostwheel_vehicle_interface/msg | grep -i 'cmd'; then
-            echo 'A Dataspeed command-message mirror was added; forbidden.'
+          # A locally generated ROS message never has the native vendor type
+          # identity. Require the native dependency instead of wire aliases.
+          if [ -d ros2/ghostwheel_vehicle_interface/msg ] &&
+             find ros2/ghostwheel_vehicle_interface/msg -type f -name '*.msg' | grep -q .; then
+            echo 'Locally mirrored vendor message types are not wire-compatible.'
             exit 1
           fi
       - name: Validate parameter YAML structure

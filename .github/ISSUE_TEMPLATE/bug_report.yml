@@ -1,5 +1,5 @@
 name: Bug report
-about: Report a reproducible simulation or interface defect
+description: Report a reproducible simulation or interface defect
 labels: [bug]
 body:
   - type: markdown

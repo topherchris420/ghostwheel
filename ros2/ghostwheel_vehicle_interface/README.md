@@ -42,6 +42,69 @@ When running in hardware-monitor mode, use an isolated, authorized diagnostic se
 
 A fresh, stamped synthetic command is required before simulation moves. If it stops arriving for more than `control_timeout_ms`, default 100 ms, the software applies 100% *synthetic* brake and zero throttle/steering demand. It does not apply any physical brake. ROS shutdown requests the same synthetic stop; abnormal process or OS failure cannot be covered by a software callback.
 
+## PACMod3 observation adapter (optional, read-only)
+
+The standalone `ghostwheel_pacmod3_adapter` executable is built only when
+`pacmod3_msgs` is available during CMake configuration. Use the actual
+[AutonomouStuff ROS 2 driver](https://github.com/astuff/pacmod3/tree/ros2_master)
+and [PACMod3 message definitions](https://github.com/astuff/pacmod3_msgs).
+The previously suggested `autowarefoundation/pacmod3_ros2` URL is not available.
+
+The PACMod3 driver must already be connected and configured by authorized
+personnel, using the vehicle's supported DBC and manual. This adapter is a
+**subscriber-only monitor** for PACMod3 and an Autoware feedback publisher.
+It does not open CAN, publish to `/pacmod/*_cmd`, call a DBW enable service,
+or trigger a physical E-stop. Never run a separate direct-CAN monitor and the
+PACMod3 driver on the same device without verifying ownership and bus safety.
+
+Build in a sourced ROS 2/Autoware workspace that also contains
+`pacmod3_msgs` and `std_srvs`:
+
+```bash
+colcon build --packages-select ghostwheel_vehicle_interface
+source install/setup.bash
+ros2 run ghostwheel_vehicle_interface ghostwheel_pacmod3_adapter --ros-args \
+  --params-file src/ghostwheel/ros2/ghostwheel_vehicle_interface/config/vehicle_interface_params.yaml
+```
+
+**PACMod3 subscriptions**:
+- `/pacmod/global_rpt` (`pacmod3_msgs/msg/GlobalRpt`)
+- `/pacmod/accel_rpt`, `/pacmod/brake_rpt`, `/pacmod/steering_rpt` (`SystemRptFloat`)
+- `/pacmod/vehicle_speed_rpt` (`VehicleSpeedRpt`)
+- `/pacmod/yaw_rate_rpt` (`YawRateRpt`, not supported on all platforms)
+- `/pacmod/estop_rpt` (`EStopRpt`, when available)
+- `/control/command/control_cmd` (`autoware_control_msgs/msg/Control`, **validation only, no forwarding**)
+
+**Outputs**:
+- `/vehicle/status/control_mode_report` (`ControlModeReport`):
+  infers from the global enable, individual system enable flags, report
+  freshness, override state, and fault latch. This represents **observed
+  kit state**, not Ghostwheel's ability to take control.
+- `/vehicle/status/velocity_status`: only after valid speed and yaw-rate
+  feedback **and explicit confirmation** that zero lateral velocity is a
+  safe vehicle-model assumption.
+- `/vehicle/status/steering_status`: only after providing a measured,
+  vehicle-specific steering wheel to tire ratio and sign.
+- `/vehicle/status/actuation_status`: only after separately configuring
+  steering conversion and percent-to-fraction scaling for pedal reports.
+- `/ghostwheel/pacmod3/fault` (`std_msgs/msg/String`): latest latched
+  fault identifier.
+- `/ghostwheel/pacmod3/stop_requested` (`std_msgs/msg/Bool`): **software
+  advisory only**, not an emergency-stop circuit.
+- `/ghostwheel/pacmod3/stationary_disengaged` (`std_msgs/msg/Bool`):
+  observed stationary/disengaged state. **Not an enable command.**
+- `/ghostwheel/pacmod3/acknowledge_fault` (`std_srvs/srv/Trigger`):
+  opt-in software-latch acknowledgement only, permitted after a valid,
+  fault-free, stationary/disengaged state. Never engages the DBW kit.
+
+For safety, feedback report conversion parameters default to **disabled**.
+The adapter latches PACMod faults and timeouts, and tracks Autoware command
+freshness only when PACMod globally reports enabled. On an observed fault
+it publishes a software stop request; the **independent OEM/kit-certified
+controller** must handle any actual physical disengagement or braking.
+An observer is not a verified hardware supervisor. Kit watchdog timeouts,
+steering sign/ratio, units and enable sequences require model-specific tests.
+
 ## Verification examples
 
 ```bash

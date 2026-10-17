@@ -162,6 +162,16 @@ The desktop build creates a packaged application and an NSIS installer under `ou
 
 Full prerequisites, packaging behavior, smoke-test commands, and compatibility-build notes: [Windows packaging guide](src-tauri/PACKAGING.md).
 
+## Optional PACMod3 read-only integration
+
+The ROS 2 package now includes a **PacMod3 report observer**. With AutonomouStuff's
+`pacmod3_msgs` installed, it subscribes to actual PACMod3 status and fault
+reports, produces calibrated Autoware feedback when explicitly configured,
+and publishes advisory stop/fault signals. It never sends physical actuator
+commands or initiates drive-by-wire engagement.
+
+[Read the PACMod3 setup and topic contract](ros2/ghostwheel_vehicle_interface/README.md#pacmod3-observation-adapter-optional-read-only).
+
 ## ROS 2 interface: choose between two workflows
 
 Ghostwheel now includes an **optional C++17 ROS 2 package** at [`ros2/ghostwheel_vehicle_interface`](ros2/ghostwheel_vehicle_interface/README.md).

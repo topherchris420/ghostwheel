@@ -1,5 +1,14 @@
 import { useEffect, useRef } from 'react';
-import { ArrowRight, CircleHelp, Database, FlaskConical, Keyboard, ShieldCheck, WifiOff, X } from 'lucide-react';
+import {
+  ArrowRight,
+  CircleHelp,
+  Database,
+  FlaskConical,
+  Keyboard,
+  ShieldCheck,
+  WifiOff,
+  X,
+} from 'lucide-react';
 import type { Tab } from './useConsole';
 
 type WelcomeProps = {
@@ -50,7 +59,9 @@ export default function Welcome({ connected, onClose, onNavigate, onReconnect }:
           <ShieldCheck size={21} />
           <div>
             <strong>Simulation only</strong>
-            <p>No real vehicles, CAN devices, OBD ports, or remote vehicle controls are connected.</p>
+            <p>
+              No real vehicles, CAN devices, OBD ports, or remote vehicle controls are connected.
+            </p>
           </div>
         </div>
         <ol className="welcome-steps">
@@ -58,33 +69,47 @@ export default function Welcome({ connected, onClose, onNavigate, onReconnect }:
             <span className="welcome-step-number">01</span>
             <div>
               <strong>Choose a virtual car</strong>
-              <p>Start in Operations and select ASTER, VECTOR, or NOMAD. Each choice starts a fresh run.</p>
+              <p>
+                Start in Operations and select ASTER, VECTOR, or NOMAD. Each choice starts a fresh
+                run.
+              </p>
             </div>
           </li>
           <li>
             <span className="welcome-step-number">02</span>
             <div>
               <strong>Drive on the test field</strong>
-              <p>Arm the simulation. Use the sliders or W/A/S/D to move. Press Space for Safe Stop.</p>
-              <span className="welcome-shortcut"><Keyboard size={13} /> Keep the app focused while driving</span>
+              <p>
+                Arm the simulation. Use the sliders or W/A/S/D to move. Press Space for Safe Stop.
+              </p>
+              <span className="welcome-shortcut">
+                <Keyboard size={13} /> Keep the app focused while driving
+              </span>
             </div>
           </li>
           <li>
             <span className="welcome-step-number">03</span>
             <div>
               <strong>See what the safeguards catch</strong>
-              <p>Run a synthetic scenario, then visit Research for repeatable tests and Forensics for replay.</p>
+              <p>
+                Run a synthetic scenario, then visit Research for repeatable tests and Forensics for
+                replay.
+              </p>
             </div>
           </li>
         </ol>
         <div className="welcome-connection" role="status">
           {connected ? (
-            <><span className="dot cyan" /> Local simulator connected and ready</>
+            <>
+              <span className="dot cyan" /> Local simulator connected and ready
+            </>
           ) : (
             <>
               <WifiOff size={15} />
               <span>Local simulator not connected. The installed app starts it automatically.</span>
-              <button type="button" onClick={onReconnect}>Retry</button>
+              <button type="button" onClick={onReconnect}>
+                Retry
+              </button>
             </>
           )}
         </div>
@@ -95,7 +120,11 @@ export default function Welcome({ connected, onClose, onNavigate, onReconnect }:
           <button type="button" className="button secondary" onClick={() => onNavigate('research')}>
             <FlaskConical size={15} /> Research tests
           </button>
-          <button type="button" className="button secondary" onClick={() => onNavigate('forensics')}>
+          <button
+            type="button"
+            className="button secondary"
+            onClick={() => onNavigate('forensics')}
+          >
             <Database size={15} /> Replays
           </button>
         </div>

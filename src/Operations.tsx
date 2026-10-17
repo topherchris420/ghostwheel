@@ -117,7 +117,9 @@ export default function Operations({ m }: { m: ConsoleModel }) {
               </div>
               <button
                 className={'toggle ' + (armed ? 'on' : '')}
-                aria-label={armed ? 'Disable virtual driving controls' : 'Enable virtual driving controls'}
+                aria-label={
+                  armed ? 'Disable virtual driving controls' : 'Enable virtual driving controls'
+                }
                 aria-pressed={armed}
                 disabled={!connected || !!replay || !!busy || snapshot?.paused}
                 onClick={() => (armed ? void m.safeStop() : m.setArmed(true))}

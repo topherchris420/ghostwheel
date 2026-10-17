@@ -107,17 +107,17 @@ export default function Operations({ m }: { m: ConsoleModel }) {
             </div>
           </section>
           <section className="panel controls-panel">
-            <SectionTitle number="02" title="Actuation control">
+            <SectionTitle number="02" title="Virtual driving controls">
               <SlidersHorizontal size={14} />
             </SectionTitle>
             <div className="control-arm">
               <div>
                 <span className={armed ? 'dot cyan' : 'dot amber'} />
-                <b>{armed ? 'SESSION ARMED' : 'SESSION DISARMED'}</b>
+                <b>{armed ? 'CONTROLS ENABLED' : 'CONTROLS OFF'}</b>
               </div>
               <button
                 className={'toggle ' + (armed ? 'on' : '')}
-                aria-label={armed ? 'Disarm simulated actuation' : 'Arm simulated actuation'}
+                aria-label={armed ? 'Disable virtual driving controls' : 'Enable virtual driving controls'}
                 aria-pressed={armed}
                 disabled={!connected || !!replay || !!busy || snapshot?.paused}
                 onClick={() => (armed ? void m.safeStop() : m.setArmed(true))}
@@ -125,6 +125,10 @@ export default function Operations({ m }: { m: ConsoleModel }) {
                 <span />
               </button>
             </div>
+            <p className="control-quicktip">
+              Turn on the switch to unlock virtual steering and pedals. These controls cannot
+              connect to a real vehicle.
+            </p>
             <div className="steering-visual">
               <SteeringWheel angle={snapshot?.vehicle.steer_deg || 0} />
               <div>
@@ -204,7 +208,7 @@ export default function Operations({ m }: { m: ConsoleModel }) {
               <kbd>A</kbd>
               <kbd>S</kbd>
               <kbd>D</kbd>
-              <span>drive · space to stop</span>
+              <span>virtual drive · space to stop</span>
             </div>
             <button
               className="safe-stop"

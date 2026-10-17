@@ -1,4 +1,4 @@
-#include "ghostwheel/pacmod_observer_state.hpp"
+#include "ghostwheel/dbw_observer_state.hpp"
 
 #include <autoware_control_msgs/msg/control.hpp>
 #include <autoware_vehicle_msgs/msg/actuation_report_stamped.hpp>
@@ -119,9 +119,37 @@ class Pacmod3Observer final : public rclcpp::Node {
     stop_pub_ = create_publisher<std_msgs::msg::Bool>(
       "/ghostwheel/pacmod3/stop_requested", latched_qos);
     stationary_pub_ = create_publisher<std_msgs::msg::Bool>(
-      "/ghostwheel/pacmod3/stationary_disengaged", status_qos);
+      "/ghostwheel/pacmod3/standstill_to_engage_ready", status_qos);
 
     const auto sensor_qos = rclcpp::SensorDataQoS();
+
+    // Read-only bridge for the Autoware-compatible enable topic. The ghostwheel
+    // node NEVER publishes here; this subscription only observes whether an
+    // external, authorized operator/tool has engaged the kit so the state can
+    // be mirrored on /vehicle/status/control_mode_report.
+    dbw_enabled_sub_ = create_subscription<std_msgs::msg::Bool>(
+      "/vehicle/dbw_enabled", sensor_qos,
+      [this](std_msgs::msg::Bool::ConstSharedPtr msg) {
+        std::lock_guard<std::mutex> lock(mutex_);
+        external_enable_.update(*msg);
+        if (msg->data && !fault_latched_) {
+          RCLCPP_WARN(get_logger(),
+            "Observed external /vehicle/dbw_enabled=true request. Ghostwheel does "
+            "not issue enables; verify the kit is engaged by an authorized operator.");
+        }
+      });
+
+    // PACMod3 publishes its authoritative enable state on /pacmod/enabled.
+    // This is a monitor of the kit's own engage/disengage decision (made by
+    // the driver button, the kit safety logic or an external enable tool);
+    // Ghostwheel never writes to it.
+    pacmod_enabled_sub_ = create_subscription<std_msgs::msg::Bool>(
+      "/pacmod/enabled", sensor_qos,
+      [this](std_msgs::msg::Bool::ConstSharedPtr msg) {
+        std::lock_guard<std::mutex> lock(mutex_);
+        enabled_rpt_.update(*msg);
+      });
+
     global_sub_ = create_subscription<pacmod3_msgs::msg::GlobalRpt>(
       "/pacmod/global_rpt", sensor_qos,
       [this](pacmod3_msgs::msg::GlobalRpt::ConstSharedPtr msg) {
@@ -214,7 +242,7 @@ class Pacmod3Observer final : public rclcpp::Node {
         auto observed = observation_locked(current);
         observed.fault_latched = false;
         if (!recovery_enabled_ || !fault_reason_locked(current).empty() ||
-            !stationary_and_disengaged(observed) || command_invalid_) {
+            !standstill_to_engage_precondition_met(observed) || command_invalid_) {
           response->success = false;
           response->message = "Cannot acknowledge: disabled recovery, unhealthy reports, "
             "invalid command, or not stationary/disengaged";
@@ -222,13 +250,15 @@ class Pacmod3Observer final : public rclcpp::Node {
         }
         fault_latched_ = false;
         latched_reason_.clear();
+        enable_mismatch_ = false;
         response->success = true;
         response->message = "Software fault latch acknowledged; PACMod has NOT been enabled";
       });
 
     timer_ = create_wall_timer(20ms, std::bind(&Pacmod3Observer::on_tick, this));
     RCLCPP_INFO(get_logger(),
-      "PACMod3 observer started: receive-only, never publishes PACMod commands");
+      "PACMod3 DBW observer started: monitors kit enable/fault state, receive-only, "
+      "never publishes PACMod commands or enables");
   }
 
  private:
@@ -240,8 +270,8 @@ class Pacmod3Observer final : public rclcpp::Node {
       reason.c_str());
   }
 
-  PacmodObservation observation_locked(TimePoint now) const {
-    PacmodObservation e;
+  DbwObservation observation_locked(TimePoint now) const {
+    DbwObservation e;
     e.global_fresh = global_.fresh(now, report_timeout_);
     e.global_enabled = global_.seen && global_.value.enabled;
     e.global_fault = global_.seen && (
@@ -249,6 +279,14 @@ class Pacmod3Observer final : public rclcpp::Node {
       global_.value.brake_can_timeout || global_.value.subsystem_can_timeout ||
       global_.value.vehicle_can_timeout || global_.value.pacmod_sys_fault_active ||
       global_.value.config_fault_active);
+    // Cross-check the kit's authoritative enable topic when it is available.
+    // A disagreement between /pacmod/global_rpt.enabled and /pacmod/enabled is
+    // itself a fault: both sources must agree before we call the kit ready.
+    if (enabled_rpt_.fresh(now, report_timeout_) &&
+        enabled_rpt_.value.data != e.global_enabled) {
+      enable_mismatch_ = true;
+    }
+    if (enable_mismatch_) e.global_fault = true;
     e.override_active = global_.seen && global_.value.override_active;
     e.accel_fresh = accel_.fresh(now, report_timeout_);
     e.brake_fresh = brake_.fresh(now, report_timeout_);
@@ -260,6 +298,16 @@ class Pacmod3Observer final : public rclcpp::Node {
       speed_.value.vehicle_speed_valid && finite(speed_.value.vehicle_speed);
     e.stationary = e.speed_fresh_valid &&
       std::fabs(speed_.value.vehicle_speed) <= standstill_threshold_;
+    // E-stop reporting path is optional on PACMod3 platforms; when the topic
+    // exists it must stay fresh and untripped, otherwise NOT_READY.
+    e.estop_present = estop_.seen;
+    e.estop_fresh = estop_.seen ? estop_.fresh(now, report_timeout_) : true;
+    e.estop_tripped = estop_.seen && (estop_.value.estop_status ||
+      estop_.value.estop_fault);
+    e.estop_fault = estop_.seen && estop_.value.estop_fault;
+    e.subsystem_fault = (e.accel_fresh && system_fault(accel_.value)) ||
+      (e.brake_fresh && system_fault(brake_.value)) ||
+      (e.steering_fresh && system_fault(steer_.value));
     e.fault_latched = fault_latched_;
     return e;
   }
@@ -267,6 +315,13 @@ class Pacmod3Observer final : public rclcpp::Node {
   std::string fault_reason_locked(TimePoint now) const {
     if (global_.seen && !global_.fresh(now, report_timeout_)) return "PACMOD_GLOBAL_STALE";
     const auto e = observation_locked(now);
+    if (enable_mismatch_) return "PACMOD_ENABLE_STATE_MISMATCH";
+    // An external tool claiming dbw_enabled while the kit itself reports it is
+    // NOT engaged means the two views of control authority disagree. Fail closed.
+    if (external_enable_.fresh(now, report_timeout_) &&
+        external_enable_.value.data && !e.global_enabled) {
+      return "EXTERNAL_ENABLE_WITHOUT_KIT_ENGAGEMENT";
+    }
     if (estop_.seen && e.global_enabled &&
         !estop_.fresh(now, report_timeout_)) {
       return "PACMOD_ESTOP_REPORT_STALE";
@@ -319,7 +374,7 @@ class Pacmod3Observer final : public rclcpp::Node {
     mode_pub_->publish(mode);
 
     std_msgs::msg::Bool stationary;
-    stationary.data = stationary_and_disengaged(e);
+    stationary.data = standstill_to_engage_precondition_met(e);
     stationary_pub_->publish(stationary);
 
     std_msgs::msg::Bool stop_request;
@@ -391,11 +446,14 @@ class Pacmod3Observer final : public rclcpp::Node {
   bool fault_latched_{false};
   bool command_invalid_{false};
   bool command_seen_{false};
+  bool enable_mismatch_{false};
   TimePoint command_at_{};
   std::string latched_reason_;
   std::string published_fault_;
 
   Sample<pacmod3_msgs::msg::GlobalRpt> global_;
+  Sample<std_msgs::msg::Bool> enabled_rpt_;
+  Sample<std_msgs::msg::Bool> external_enable_;
   Sample<pacmod3_msgs::msg::VehicleSpeedRpt> speed_;
   Sample<pacmod3_msgs::msg::YawRateRpt> yaw_;
   Sample<pacmod3_msgs::msg::SystemRptFloat> accel_;
@@ -411,6 +469,8 @@ class Pacmod3Observer final : public rclcpp::Node {
   rclcpp::Subscription<pacmod3_msgs::msg::SystemRptFloat>::SharedPtr steer_sub_;
   rclcpp::Subscription<pacmod3_msgs::msg::EStopRpt>::SharedPtr estop_sub_;
   rclcpp::Subscription<autoware_control_msgs::msg::Control>::SharedPtr control_sub_;
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr pacmod_enabled_sub_;
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr dbw_enabled_sub_;
 
   rclcpp::Publisher<autoware_vehicle_msgs::msg::ControlModeReport>::SharedPtr mode_pub_;
   rclcpp::Publisher<autoware_vehicle_msgs::msg::VelocityReport>::SharedPtr speed_pub_;

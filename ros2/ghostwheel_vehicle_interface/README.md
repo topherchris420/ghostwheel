@@ -50,7 +50,9 @@ The standalone `ghostwheel_pacmod3_adapter` executable is built only when
 and [PACMod3 message definitions](https://github.com/astuff/pacmod3_msgs).
 The previously suggested `autowarefoundation/pacmod3_ros2` URL is not available.
 
-Run **either** the base `ghostwheel_vehicle_interface` node **or** this PACMod observer when publishing the same Autoware status topics; avoid multiple conflicting publishers.\n\nThe PACMod3 driver must already be connected and configured by authorized
+Run **either** the base `ghostwheel_vehicle_interface` node **or** this PACMod observer when publishing the same Autoware status topics; avoid multiple conflicting publishers.
+
+The PACMod3 driver must already be connected and configured by authorized
 personnel, using the vehicle's supported DBC and manual. This adapter is a
 **subscriber-only monitor** for PACMod3 and an Autoware feedback publisher.
 It does not open CAN, publish to `/pacmod/*_cmd`, call a DBW enable service,
@@ -104,6 +106,73 @@ it publishes a software stop request; the **independent OEM/kit-certified
 controller** must handle any actual physical disengagement or braking.
 An observer is not a verified hardware supervisor. Kit watchdog timeouts,
 steering sign/ratio, units and enable sequences require model-specific tests.
+
+## Dataspeed DBW observation adapter (optional, read-only)
+
+The standalone `ghostwheel_dataspeed_adapter` executable implements the same
+contract for **Option B (Dataspeed DBW)**. It builds whenever ROS 2/Autoware
+dependencies are present: it prefers the vendor message package
+[`dataspeed_dbw_msgs`](https://github.com/DataspeedInc/dataspeed_dbw_msgs); if
+that package is absent, CMake generates the field-compatible report mirrors in
+`msg/` (see `msg/README.md`) and aliases them to the vendor type names, so the
+same source compiles either way. No command messages are mirrored — the
+adapter has no command publisher at all.
+
+Like the PACMod3 adapter, this node uses the shared kit-independent decision
+model in `include/ghostwheel/dbw_observer_state.hpp`, so engagement, control
+mode, standstill-to-engage and fault semantics cannot drift between kits.
+
+Run it from the same sourced workspace (its parameters live in the
+`ghostwheel_dataspeed_adapter` section of the shared params file):
+
+```bash
+ros2 run ghostwheel_vehicle_interface ghostwheel_dataspeed_adapter --ros-args \
+  --params-file src/ghostwheel/ros2/ghostwheel_vehicle_interface/config/vehicle_interface_params.yaml
+```
+
+**Dataspeed subscriptions** (native topics, receive-only; remap to your kit's
+namespace if it differs):
+- `/vehicle/status` (`dataspeed_dbw_msgs/msg/DbwStatus`): engaged flag,
+  status enum, `fault_*` and `preempted_*` bits
+- `/vehicle/speed/RPT` (`SpeedReport`): longitudinal speed in m/s
+- `/vehicle/accelerator_position/RPT`, `/vehicle/brake_position/RPT`
+  (`AcceleratorReport`/`BrakeReport`): pedal fraction, override/error bits
+- `/vehicle/steering_position/RPT` (`SteerByWire Report`): steering wheel
+  angle in rad, override/error bits
+- `/control/command/control_cmd` (`autoware_control_msgs/msg/Control`,
+  **validation only, no forwarding**)
+
+**Outputs**:
+- `/vehicle/status/control_mode_report`: derived from observed engage state,
+  report freshness, preemption/override flags and the fault latch.
+- `/vehicle/dbw_enabled`: read-only **mirror** of the kit's own engage state
+  for Autoware consumers. The adapter never publishes it to engage the kit.
+- `/vehicle/status/velocity_status`, `/vehicle/status/steering_status`,
+  `/vehicle/status/actuation_status`: gated exactly like the PACMod3 adapter
+  (calibration parameters default to disabled).
+- `/ghostwheel/dataspeed/fault`, `/ghostwheel/dataspeed/stop_requested`
+  (software advisory), `/ghostwheel/dataspeed/standstill_to_engage_ready`,
+  and the opt-in `/ghostwheel/dataspeed/acknowledge_fault` service.
+
+Fault semantics: any non-OK `DbwStatus.status`, any `fault_*` bit
+(epas/ebs/ems/tcu/can), any pedal/steering `error` bit, stale reports, EHA
+preemption, or an out-of-bounds Autoware command while engaged latches a
+fault and drops the reported mode to NOT_READY. Recovery is manual and
+conditional (`dbw_fault_recovery_enabled` defaults to false) and never
+engages the kit.
+
+The requested `/dbw/joy` joystick path is intentionally not implemented:
+forwarding teleop or control commands into a DBW kit requires the vendor's
+certified driver, an independently engineered safety supervisor and
+model-specific validation, which is outside Ghostwheel's boundary.
+
+## Unit tests
+
+Dependency-free contract tests run under CTest (`colcon test`) and in CI
+(`.github/workflows/dbw-observer-contract.yml`):
+- `ghostwheel_hal_contract_test`: HAL send-command rejection in monitor modes.
+- `ghostwheel_dbw_observer_state_test`: shared DBW decision model (both kits).
+- `ghostwheel_pacmod_observer_state_test`: legacy PACMod alias contract.
 
 ## Verification examples
 

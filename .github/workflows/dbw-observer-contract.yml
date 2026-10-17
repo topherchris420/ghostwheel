@@ -1,0 +1,86 @@
+name: DBW observer contract
+on:
+  pull_request:
+    paths:
+      - 'ros2/ghostwheel_vehicle_interface/**'
+      - '.github/workflows/dbw-observer-contract.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'ros2/ghostwheel_vehicle_interface/**'
+      - '.github/workflows/dbw-observer-contract.yml'
+permissions:
+  contents: read
+jobs:
+  observer-state:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile and exercise the shared DBW observer state decisions
+        run: |
+          g++ -std=c++17 -Wall -Wextra -Werror -pedantic \
+            -Iros2/ghostwheel_vehicle_interface/include \
+            ros2/ghostwheel_vehicle_interface/tests/dbw_observer_state_test.cpp \
+            -o /tmp/dbw_observer_state_test
+          /tmp/dbw_observer_state_test
+      - name: Compile and exercise observer state decisions (PACMod contract)
+        run: |
+          g++ -std=c++17 -Wall -Wextra -Werror -pedantic \
+            -Iros2/ghostwheel_vehicle_interface/include \
+            ros2/ghostwheel_vehicle_interface/tests/pacmod_observer_state_test.cpp \
+            -o /tmp/pacmod_observer_state_test
+          /tmp/pacmod_observer_state_test
+      - name: Verify the passive adapters have no physical command capability
+        run: |
+          # Neither adapter may create vendor-command publishers, open CAN
+          # sockets, or call DBW enable services. Only subscriptions, status
+          # publishers (std_msgs/autoware msgs), and the local Trigger
+          # acknowledge service are permitted.
+          for src in pacmod3_observer dataspeed_observer; do
+            f="ros2/ghostwheel_vehicle_interface/src/${src}.cpp"
+            # Strip comments so prose (e.g. "never opens a CAN socket") cannot
+            # trip the scan; only real code tokens are checked.
+            sed 's://.*::' "$f" > "/tmp/${src}.code"
+            if grep -E 'create_publisher[<][[:space:]]*(pacmod3_msgs|dataspeed_dbw_msgs)|socket[[:space:]]*[(]|sendto[[:space:]]*[(]|create_client' "/tmp/${src}.code"; then
+              echo "Forbidden physical command capability appeared in ${f}."
+              exit 1
+            fi
+          done
+      - name: Verify message mirrors contain no command interfaces
+        run: |
+          # msg/ mirrors report topics only; a *Cmd mirror must never appear.
+          if ls ros2/ghostwheel_vehicle_interface/msg | grep -i 'cmd'; then
+            echo 'A Dataspeed command-message mirror was added; forbidden.'
+            exit 1
+          fi
+      - name: Validate parameter YAML structure
+        run: |
+          python3 - <<'EOF'
+          import sys
+          try:
+              import yaml
+          except ImportError:
+              print("PyYAML unavailable; skipping parse check")
+              sys.exit(0)
+          p = "ros2/ghostwheel_vehicle_interface/config/vehicle_interface_params.yaml"
+          with open(p) as fh:
+              doc = yaml.safe_load(fh)
+          for node in ("ghostwheel_vehicle_interface",
+                        "ghostwheel_pacmod3_adapter",
+                        "ghostwheel_dataspeed_adapter"):
+              params = doc[node]["ros__parameters"]
+              assert isinstance(params, dict), node
+          adapter = doc["ghostwheel_pacmod3_adapter"]["ros__parameters"]
+          ds = doc["ghostwheel_dataspeed_adapter"]["ros__parameters"]
+          assert adapter["dbw_kit"] == "pacmod3"
+          assert ds["dbw_kit"] == "dataspeed"
+          # Startup auto-enable must remain disabled by default in both kits.
+          assert adapter["dbw_enable_on_startup"] is False
+          assert ds["dbw_enable_on_startup"] is False
+          # ROS watchdog must be shorter than any configured kit timeout.
+          for a in (adapter, ds):
+              hw = a["dbw_hardware_timeout_ms"]
+              assert hw == 0 or a["control_timeout_ms"] < hw
+          print("Parameter YAML OK")
+          EOF

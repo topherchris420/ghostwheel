@@ -104,6 +104,21 @@ Each baseline is 160 ticks / 8 simulated seconds, with 80 valid commands and a 0
 
 No endpoint accepts a vehicle network address, OEM CAN write, arbitrary simulator host, shell command or arbitrary file path. The connector registry rejects any non-simulation transport at registration, so no such connector can be named in a request. CARLA blueprints are allowlisted simulation assets. Secrets remain local; TLS is not used on loopback. The host and installed binary are trusted. This is not a defense against a compromised local administrator.
 
+## Browser edition
+
+The hosted web build runs the simulator inside the page, so it needs no backend, install or network access after load. `src/api.ts` picks the edition: the Tauri app uses its bundled loopback service, `npm run dev` uses a Python server on port 8765, and a production web build uses `src/sim/`. `VITE_SIMULATOR=browser|local` overrides the web default. The browser simulator is a separate chunk that the desktop app never loads.
+
+`src/sim/` is a line-for-line TypeScript port of `model.py`, `ecu.py`, `gateway.py`, `engine.py`, `experiments.py`, `recorder.py` and the SIL connector, behind an in-process service (`backend.ts`) that answers the same routes as the table above and pushes the same snapshots the WebSocket stream does. Request bodies make a JSON round trip, so value semantics match the HTTP boundary. `random.ts` reproduces CPython's seeded Mersenne Twister, so a seed drives the same actuator disturbance in both editions.
+
+`npm run verify:browser` (also run in CI) bundles the port and checks it against the Python backend: SHA-256 against Node, `random.Random` bit for bit, every architecture's trajectory, CAN frames and ECU counters over several seeds (states agree to about 1e-15), all 27 scenario verdicts, and the experiment suite's assertion totals. It also confirms that an edited recording is rejected and that a full 8,000-tick run recomputes on replay.
+
+Differences from the desktop app:
+
+- Recordings stay in memory and are cleared when the tab closes. Only the four most recent interactive runs are kept, because a full-length run holds about 50 MB. Exported JSON is the way to keep one.
+- CARLA is unavailable. The SIL connector works.
+- Gateway latency uses `performance.now()`, which browsers coarsen. `vercel.json` sets COOP/COEP so the page is cross-origin isolated, which gives the finer browser timer, and the experiment report notes the quantization.
+- Long replays and the experiment suite yield to the page every 12 ms, so the console stays responsive while they verify.
+
 ## Acceptance evidence and limits
 
 The final verification receipt names the tested backend/test source hashes and host. The exact Python-run receipt is preserved as `python-test-run.json`; final frontend identities and its separately scoped QA receipts are retained alongside it. `source-manifest.json` identifies the final original source and configuration. The source tests cover validation boundary conditions, forward/repeated sequence rejection, three independent vehicles, finite numeric handling, per-tick slew limits, ECU disagreement, watchdog state, HTTP origins/Host/authentication, record corruption, recording-failure latch, a mocked CARLA SDK contract, and the connector boundary: refusal of non-simulation transports, factory-smuggling defence, SIL determinism and digest parity with builtin, chain-verified SIL replay, connector failure latching and the connector HTTP surface. Stream tests use a raw-socket client and cover the RFC 6455 accept key, foreign-Origin refusal, close 1008 with no snapshot for a wrong token, a push after each control and stop, the echoed close, and a 1001 close on shutdown. The Windows build receipt and UI QA evidence document separate packaging and interaction checks.

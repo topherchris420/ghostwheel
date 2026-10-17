@@ -1,82 +1,185 @@
-# GHOSTWHEEL | GW-01
+# GHOSTWHEEL <sub>GW-01</sub>
 
-A functional Windows automotive cybersecurity research console. All driving actuation is confined to original virtual vehicles or an explicitly connected local CARLA simulator. RESTRICTED is a visual classification aesthetic, not an official classification.
+**Take the wheel. Challenge the safeguards. Follow the evidence.**
 
-## First launch: no technical background needed
+> A hands-on automotive cybersecurity lab where you can drive fictional electric vehicles, inject synthetic control faults, and investigate exactly how a safety boundary responds.
+>
+> **No real vehicle is connected or controlled.** Every driving command stays inside the built-in simulator or an explicitly connected local CARLA simulation.
 
-GHOSTWHEEL is a **Windows simulation app** for students, instructors, and curious drivers. Its cars are invented virtual models, not production vehicles. The steering wheel and pedals never connect to an actual car.
+![Platform: Windows x64](https://img.shields.io/badge/platform-Windows%20x64-172B3A)
+![Scope: simulation only](https://img.shields.io/badge/actuation-simulation%20only-0B7379)
+![Version: GW-01](https://img.shields.io/badge/research-GW--01-172B3A)
+[![License: MIT](https://img.shields.io/badge/license-MIT-0B7379)](LICENSE)
 
-1. Install and open the Windows application. If you're building from source, follow the developer commands below.
-2. The **Quick start** guide appears on first launch. Open it again from the header any time.
-3. Choose a virtual car in **Operations**. Arm the **simulation controls**, then use the sliders or **W/A/S/D**. Press **Space** for Safe Stop.
-4. Use **Research lab** for reproducible synthetic security tests. Use **Forensic replay** to inspect recorded state without sending commands.
-5. Export the experiment report or recorded session as JSON when you want to share results.
+**[Start with the simulator](#get-behind-the-virtual-wheel)** · **[Explore the research lab](#four-ways-to-explore)** · **[Read the engineering notes](docs/engineering.md)** · **[Present it in five minutes](docs/presentation-guide.md)**
 
-**Connection help:** The installed Windows app starts a private local backend. If you see **SIMULATION OFFLINE**, click **Reconnect** or **Retry** in the guide. In source development, check that the Python server is running at `127.0.0.1:8765`. CARLA is optional, and no vehicle, CAN adapter, or OBD device is needed.
+---
 
-**Plain-English glossary:** *Arm* enables controls for the selected virtual car. *Gateway* checks synthetic commands before applying them. *Safe Stop* disarms the controls and stops the virtual car. *Replay* reads saved state and never drives anything.
+## What happens when a car refuses a command?
 
-## Run the demonstration
+A steering request arrives. The authorization gateway checks who sent it, whether it is fresh, whether it repeats an old command, and whether the requested motion belongs inside the model's safety envelope.
 
-Install the setup executable in `output/release/`, then launch GHOSTWHEEL from the Start menu. The app bundles its Python service, React interface and SQLite recording. The desktop launcher chooses an ephemeral loopback port and a fresh secret; Python need not be installed on the presentation machine. Microsoft WebView2 is required; the installer can install its bootstrapper when missing. See [build notes](src-tauri/PACKAGING.md) for the exact build and validation status.
+If it passes, the **virtual** steering system responds. If it fails, the system records *why* and requests a safe state. You can watch the result, reproduce it with a seed, and inspect the recording later.
 
-1. Select ASTER, VECTOR or NOMAD. Reset starts a new seeded run.
-2. Arm simulated control. Use the steering slider or A/D, W for throttle, S for brake. Space applies safe stop. Keep the window focused while driving.
-3. Run a synthetic scenario. It uses in-memory commands only; examine the reason code and the safe state.
-4. Open Research and run the seeded suite. Export the actual results as JSON.
-5. Open Forensics, load a recorded run, scrub or play it, and inspect integrity/recomputation status. Replay does not send driving commands.
+GHOSTWHEEL turns that sequence into something you can touch rather than just read about. It is built for students, instructors, researchers, and anyone curious about the boundary between software instructions and cyber-physical behavior.
 
-The self-contained models run at a 50 ms physics step with independent state for three invented architectures. A missing heartbeat trips the watchdog on the first tick after the 300 ms lease, at 350 ms in simulation time. A live run is capped at 8,000 ticks (400 s); reset starts another recording.
+### The questions you can investigate
 
-## Develop and reproduce
+- **Can a bad command slip through?** Test malformed, stale, repeated, unauthorized, and implausible synthetic requests.
+- **What happens when the operator disappears?** Observe a modeled heartbeat lease and watchdog-triggered safe stop.
+- **Do different architectures react differently?** Compare three independently simulated steering systems under a common command contract.
+- **Can you prove what happened?** Export experimental results and replay recorded states with integrity checks.
 
-Requirements: Node.js, Python 3.11+, and the Windows Tauri build prerequisites documented by Tauri. The Python simulation has no runtime dependencies. CARLA is optional for the self-contained experiment.
+The findings describe **this simulation and its finite test scenarios**, not the security or safety of a production vehicle.
 
-```powershell
+## Four ways to explore
+
+| Area | What you can do | What you learn |
+| --- | --- | --- |
+| **01 · Operations** | Drive a fictional EV with sliders or keyboard controls and watch live telemetry. | How steering demand, actuator lag, and safe stops affect a simulated trajectory. |
+| **02 · Research lab** | Run a repeatable, seeded suite of synthetic command and dropout trials. | Which inputs the gateway rejects and how to interpret measured tracking and processing metrics. |
+| **03 · Forensic replay** | Load a recorded session, scrub through frames, and inspect verification status. | How a simulation's event trail can be checked and, for built-in runs, recomputed. |
+| **04 · System protocol** | Examine the authorization path, modeled vehicles, connector policy, and optional CARLA bridge. | Where the simulation boundary is enforced and what lies outside the threat model. |
+
+### Meet the virtual fleet
+
+| Vehicle | Fictional architecture | Why try it? |
+| --- | --- | --- |
+| **ASTER** | Single steering actuator | Start with a clear, simple control response. |
+| **VECTOR** | Dual modeled steering channels | Explore independent actuator dynamics and disagreement detection. |
+| **NOMAD** | Slower steering response and longer wheelbase | See how a different model changes the same experiment. |
+
+These are **original teaching models**, not representations of actual vehicle makes, firmware, or OEM calibrations.
+
+## Get behind the virtual wheel
+
+**For Windows users:** GHOSTWHEEL is a Tauri desktop app with a React console, bundled local Python backend, and SQLite recording. No programming, CARLA installation, vehicle adapter, or external hardware is required to use the installed **built-in simulation**.
+
+**Where to get it:** A Windows installer is generated by the [Windows build workflow](.github/workflows/windows.yml). If a successful workflow run has a downloadable artifact available to your account, find it under [Actions](../../actions/workflows/windows.yml). Installers are build artifacts, **not files checked into this repository**. You can also [build one from source](#build-the-windows-application).
+
+Once installed:
+
+1. **Launch GHOSTWHEEL.** The first-run **Quick start** guide introduces the interface. Reopen it from the header whenever you want.
+2. **Select ASTER, VECTOR, or NOMAD** in **Operations** and arm *simulation controls*.
+3. **Drive the test field.** Use the on-screen controls or the shortcuts below. Keep the app window focused.
+4. **Try a synthetic fault.** Watch the gateway decision, reason code, and resulting virtual safe state.
+5. **Run Research lab**, then visit **Forensic replay** to examine a recording. Export experiment or session JSON to share the evidence.
+
+| Key | Action |
+| --- | --- |
+| **W** | Virtual throttle |
+| **S** | Virtual brake |
+| **A / D** | Steer left / right |
+| **Space** | Safe Stop: disarm and brake the virtual vehicle |
+
+**Connection trouble?** The desktop launcher starts its own private, loopback-only backend. If you see **SIMULATION OFFLINE**, use **Reconnect** or **Retry** in Quick start. When running from source, confirm that the Python server is listening at \`127.0.0.1:8765\`.
+
+**A quick glossary:** *Arm* enables controls for the selected simulation. *Gateway* validates a command before virtual actuation. *Safe Stop* disarms controls and requests braking. *Replay* examines a saved run without sending commands.
+
+## Under the hood
+
+\`\`\`mermaid
+flowchart LR
+    A["Operator console"] --> B["Local authorization gateway"]
+    B --> C{"Allowed?"}
+    C -->|Yes| D["Simulation-only connector"]
+    C -->|No| E["Recorded rejection + virtual safe state"]
+    D --> F["Built-in model / SIL / local CARLA"]
+    F --> G["Synthetic telemetry + SQLite event ledger"]
+    E --> G
+    G --> H["Experiments and read-only forensic replay"]
+\`\`\`
+
+**Design choices that matter:**
+
+- **Simulation-only by construction.** The connector registry accepts only transports declared as \`simulation\`. Physical CAN, OBD, serial, and remote-vehicle actuation are not implemented.
+- **Three independent models.** ASTER, VECTOR, and NOMAD maintain separate virtual state behind the same command interface.
+- **Deterministic built-in experiments.** A fixed **50 ms simulation step** and explicit seeds make runs reproducible. Interactive runs are capped at **8,000 ticks (400 simulated seconds)** before a reset.
+- **Visible failure handling.** Invalid commands request a safe state; an absent accepted heartbeat expires its six-tick lease and triggers the watchdog on the next tick (**350 ms in simulation time**).
+- **Inspectable evidence.** SQLite records a chained event ledger. Built-in recordings support deterministic recomputation; SIL and CARLA recordings use chain verification without built-in-physics recomputation.
+- **A local-first console.** The packaged application runs its backend on loopback using a fresh launch secret and an ephemeral port. The app is not a remotely accessible vehicle controller.
+
+For trust boundaries, validation order, APIs, physics assumptions, and threat model details, see the [engineering architecture](docs/engineering.md).
+
+## Run from source
+
+**Requirements:** Node.js (22 for the documented Windows build), Python **3.11+**, and a terminal. The built-in Python simulator has no third-party runtime dependencies. These commands start the browser-development version of the UI and its local backend.
+
+\`\`\`powershell
+git clone https://github.com/topherchris420/ghostwheel.git
+cd ghostwheel
 npm ci
+
+# Terminal 1: start the local simulator
 $env:PYTHONPATH = (Join-Path $PWD 'backend')
 python -m ghostwheel.server --port 8765 --db output/dev.sqlite3
-# In another terminal:
+
+# Terminal 2: start the interface
 npm run dev
-# Reproduce safety tests and all three seeded experiment suites:
+\`\`\`
+
+Open the local URL shown by Vite (configured for \`127.0.0.1:1420\`). The two terminals must remain running for browser development.
+
+**Reproduce the backend checks and seeded research suites:**
+
+\`\`\`powershell
+$env:PYTHONPATH = (Join-Path $PWD 'backend')
 python scripts/verify.py
-# Build the Windows app and installer:
+\`\`\`
+
+This generates local experiment/verification outputs. Check the resulting receipts and assertions before citing any measurements; a reproducible procedure is not a claim of universal fault coverage.
+
+### Build the Windows application
+
+The documented release target is **Windows x64** with Python 3.11 x64, Node 22, Rust stable **MSVC**, the Microsoft C++ Build Tools workload, and Windows SDK.
+
+\`\`\`powershell
+npm ci
+python -m pip install -r scripts/build-requirements.txt
 npm run desktop:build
-```
+\`\`\`
 
-The locally used compatibility toolchain is recorded in the desktop build receipt; the CI recipe uses Tauri's supported MSVC environment. Dependency lock files are included. Do not claim bit-identical Windows installers: dependency resolution, toolchains and signing timestamps can differ.
+The desktop build creates a packaged application and an NSIS installer under \`output/release/\`. Microsoft WebView2 is required; the installer can obtain its bootstrapper if needed. The current release is **unsigned**.
 
-## CARLA integration
+Full prerequisites, packaging behavior, smoke-test commands, and compatibility-build notes: [Windows packaging guide](src-tauri/PACKAGING.md).
 
-The installed sidecar includes the CARLA 0.9.16 Python client. A separate matching CARLA server is required on `127.0.0.1:2000`. Follow the [official quick start](https://carla.readthedocs.io/en/0.9.16/start_quickstart/) to obtain it. In source development, install `carla==0.9.16` into the chosen Python environment.
+## Optional: connect to CARLA
 
-Use an empty simulator world with no other tick owner. In Protocol, connect CARLA. The adapter verifies matching client/server versions, configures synchronous 0.05 s ticks, reloads the world preserving those settings, spawns an owned actor, and uses batched simulator controls. Disconnect destroys that actor and restores prior settings. Connection failures are explicit. Runtime failures safe-stop/pause and require reset; there is no silent conversion into a validated builtin run.
+GHOSTWHEEL runs without CARLA. If you already use the [CARLA simulator](https://carla.readthedocs.io/en/0.9.16/start_quickstart/), the **System protocol** area provides an optional connector to a separately running **CARLA 0.9.16** server at \`127.0.0.1:2000\`.
 
-Disconnect CARLA before closing the application. An abrupt backend termination may leave its actor or synchronous settings in the external server; reset that simulator world before reconnecting. Process-tree cleanup owns local processes, not the external server. This lifecycle path still needs a running-server validation.
+The connector requires a matching client/server, an empty simulation world, and exclusive tick ownership. Disconnect it explicitly before closing the app so the adapter can destroy its owned actor and restore simulator settings. An abrupt shutdown may leave external CARLA state behind.
 
-The main steering angle remains the original virtual actuator model; CARLA's normalized command and front-left physical wheel angle are separate telemetry fields. CARLA position and velocity come from the simulator after a successful tick. Builtin experiments do not become CARLA experiments just because the SDK is installed.
+**Validation status:** CARLA SDK import and adapter contract tests are documented, but a full driving run against a live CARLA server was **not validated** in the recorded build. The built-in demonstration and its results do not depend on CARLA.
 
-## Actuation connectors
+## What the evidence does and does not say
 
-Authorized actuation reaches its consumer through a connector chosen in Protocol › Actuation connectors. There are three: `builtin` (the default model, recomputable on replay), `sil` (an in-process transport that serializes actuation with modeled latency and leaves the trajectory unchanged) and `carla`. Every connector declares its transport. The registry in `backend/ghostwheel/connectors.py` refuses any transport except `simulation`, so a physical CAN, OBD, serial or remote-device connector cannot be registered at all. See [engineering: actuation connectors](docs/engineering.md#actuation-connectors).
+| The project demonstrates | The project does **not** claim |
+| --- | --- |
+| A locally testable gateway for synthetic commands | Control of a real electric vehicle |
+| Rejection decisions and modeled safe-state behavior | Automotive safety certification or OEM-grade limits |
+| Seeded simulation experiments with measured outputs | Protection against every attack or physical fault |
+| Integrity checks on locally stored recordings | Tamper-proof or independently signed forensic evidence |
+| An optional CARLA simulation adapter | A validated real-CARLA end-to-end driving result |
 
-**Validation boundary:** no CARLA server was available during this build. SDK import and adapter contract tests are recorded, but an actual CARLA driving run remains unvalidated. The self-contained Windows demonstration and its measurements are independent of CARLA.
+Synthetic CAN frames are educational representations, **not real vehicle traffic or OEM message mappings**. The research draws on public [OVMS](https://docs.openvehicles.com/) and CARLA documentation; it does not reproduce production vehicle firmware or a vehicle actuation protocol. An REA investigation inventoried an official OVMS Android package but did **not** decompile firmware or establish a production vulnerability. See the [source ledger](evidence/source-ledger.json) and [REA evidence scope](evidence/rea-summary.json).
 
-## Engineering and research evidence
+The interface's **RESTRICTED** label is visual design, not a government or official security classification.
 
-- [Engineering architecture and API](docs/engineering.md)
-- [Five-minute university demonstration](docs/presentation-guide.md)
-- [Research foundations and primary sources](docs/research-foundations.md)
-- [Professor-ready technical report](output/pdf/GHOSTWHEEL-GW01-Technical-Report.pdf)
-- [Verification receipt](output/verification/verification.json) and test output
-- [Reference source ledger](evidence/source-ledger.json) and [actual REA scope](evidence/rea-summary.json)
+## Go deeper
 
-REA inventoried an official OVMS Android package. OVMS firmware decompilation was unavailable on this host; no decompiled firmware, VSEP implementation, production EV vulnerability or agency-derived code is claimed. Downloaded reference artifacts remain separate from the installer and original application source package.
+- **[Engineering architecture](docs/engineering.md):** authorization, models, simulation-only connectors, local API, verification, and limits.
+- **[Five-minute demonstration](docs/presentation-guide.md):** a classroom-ready walkthrough from driving to replay.
+- **[Research foundations](docs/research-foundations.md):** context, citations, and methodological boundaries.
+- **[Verification script](scripts/verify.py):** regenerate evidence instead of trusting a static success claim.
+- **[Technical report generator](scripts/report.py):** report source; generated PDFs and receipts live in ignored local \`output/\` directories rather than in the Git repository.
+- **[Windows packaging guide](src-tauri/PACKAGING.md):** installer build, runtime isolation, and validation status.
 
-## Safety and interpretation
+## Why GHOSTWHEEL exists
 
-There is no CAN hardware, OBD, serial, OEM diagnostic, OVMS command, remote-device or real EV actuation connector. The connector registry enforces this: it raises `UnsafeConnectorError` for any non-simulation transport. Extended CAN identifiers and payloads are synthetic educational data with no OEM mapping. The gateway is an application policy demonstrator, not a certified automotive safety function or an implementation of AUTOSAR SecOC.
+Automotive security is often taught as a diagram: controller, network, actuator, consequence. GHOSTWHEEL makes that diagram interactive, measurable, and falsifiable without placing a driver, a passenger, or a real vehicle in the experiment.
 
-The threat model covers malformed, stale, replayed, unauthorized and implausible commands at the simulation boundary, plus recording corruption and missing control input. It excludes a compromised host, a process owner reading local secrets, a modified application binary and a malicious independent CARLA client. A local hash chain is not an externally signed or tamper-proof record.
+**Explore the boundary. Record the result. Know exactly what you have proved.**
 
-No actual production EV connectivity is included. Any future read-only telemetry or parked convenience integration requires its own design and testing and must not share this simulator actuation interface.
+---
+
+**License:** [MIT](LICENSE) for original GHOSTWHEEL source. Third-party dependencies and reference material retain their respective licenses. Contributions and reproducible findings are welcome through repository issues and pull requests, subject to repository access.

@@ -104,7 +104,7 @@ export default function App() {
               onClick={() => {
                 if (m.armed) void m.safeStop();
                 setShowWelcome(true);
-              }
+              }}
               aria-label="Open quick start guide"
             >
               <HelpCircle size={15} /> Quick start

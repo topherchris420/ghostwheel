@@ -127,6 +127,12 @@ class Pacmod3Observer final : public rclcpp::Node {
       [this](pacmod3_msgs::msg::GlobalRpt::ConstSharedPtr msg) {
         std::lock_guard<std::mutex> lock(mutex_);
         global_.update(*msg);
+        if (msg->user_can_timeout || msg->steering_can_timeout ||
+            msg->brake_can_timeout || msg->subsystem_can_timeout ||
+            msg->vehicle_can_timeout || msg->pacmod_sys_fault_active ||
+            msg->config_fault_active) {
+          latch_fault_locked("PACMOD_GLOBAL_FAULT");
+        }
       });
     speed_sub_ = create_subscription<pacmod3_msgs::msg::VehicleSpeedRpt>(
       "/pacmod/vehicle_speed_rpt", sensor_qos,
@@ -145,24 +151,30 @@ class Pacmod3Observer final : public rclcpp::Node {
       [this](pacmod3_msgs::msg::SystemRptFloat::ConstSharedPtr msg) {
         std::lock_guard<std::mutex> lock(mutex_);
         accel_.update(*msg);
+        if (system_fault(*msg)) latch_fault_locked("PACMOD_ACCEL_FAULT");
       });
     brake_sub_ = create_subscription<pacmod3_msgs::msg::SystemRptFloat>(
       "/pacmod/brake_rpt", sensor_qos,
       [this](pacmod3_msgs::msg::SystemRptFloat::ConstSharedPtr msg) {
         std::lock_guard<std::mutex> lock(mutex_);
         brake_.update(*msg);
+        if (system_fault(*msg)) latch_fault_locked("PACMOD_BRAKE_FAULT");
       });
     steer_sub_ = create_subscription<pacmod3_msgs::msg::SystemRptFloat>(
       "/pacmod/steering_rpt", sensor_qos,
       [this](pacmod3_msgs::msg::SystemRptFloat::ConstSharedPtr msg) {
         std::lock_guard<std::mutex> lock(mutex_);
         steer_.update(*msg);
+        if (system_fault(*msg)) latch_fault_locked("PACMOD_STEERING_FAULT");
       });
     estop_sub_ = create_subscription<pacmod3_msgs::msg::EStopRpt>(
       "/pacmod/estop_rpt", sensor_qos,
       [this](pacmod3_msgs::msg::EStopRpt::ConstSharedPtr msg) {
         std::lock_guard<std::mutex> lock(mutex_);
         estop_.update(*msg);
+        if (msg->estop_status || msg->estop_fault) {
+          latch_fault_locked("PACMOD_ESTOP_REPORTED");
+        }
       });
     control_sub_ = create_subscription<autoware_control_msgs::msg::Control>(
       "/control/command/control_cmd", status_qos,
@@ -182,8 +194,12 @@ class Pacmod3Observer final : public rclcpp::Node {
         if (valid) {
           command_seen_ = true;
           command_at_ = Clock::now();
+          command_invalid_ = false;
         } else {
           command_invalid_ = true;
+          if (global_.seen && global_.value.enabled) {
+            latch_fault_locked("INVALID_AUTOWARE_COMMAND");
+          }
         }
         // Never forward this command to PACMod, CAN, or a motor controller.
       });
@@ -216,6 +232,14 @@ class Pacmod3Observer final : public rclcpp::Node {
   }
 
  private:
+  void latch_fault_locked(const std::string & reason) {
+    if (fault_latched_) return;
+    fault_latched_ = true;
+    latched_reason_ = reason;
+    RCLCPP_ERROR(get_logger(), "Observed fault: %s (software advisory only)",
+      reason.c_str());
+  }
+
   PacmodObservation observation_locked(TimePoint now) const {
     PacmodObservation e;
     e.global_fresh = global_.fresh(now, report_timeout_);
@@ -242,11 +266,15 @@ class Pacmod3Observer final : public rclcpp::Node {
 
   std::string fault_reason_locked(TimePoint now) const {
     if (global_.seen && !global_.fresh(now, report_timeout_)) return "PACMOD_GLOBAL_STALE";
+    const auto e = observation_locked(now);
+    if (estop_.seen && e.global_enabled &&
+        !estop_.fresh(now, report_timeout_)) {
+      return "PACMOD_ESTOP_REPORT_STALE";
+    }
     if (estop_.fresh(now, report_timeout_) &&
         (estop_.value.estop_status || estop_.value.estop_fault)) {
       return "PACMOD_ESTOP_REPORTED";
     }
-    const auto e = observation_locked(now);
     if (e.global_fault) return "PACMOD_GLOBAL_FAULT";
     if ((e.accel_fresh && system_fault(accel_.value)) ||
         (e.brake_fresh && system_fault(brake_.value)) ||
@@ -267,11 +295,8 @@ class Pacmod3Observer final : public rclcpp::Node {
     std::lock_guard<std::mutex> lock(mutex_);
     const auto now_steady = Clock::now();
     const std::string current_fault = fault_reason_locked(now_steady);
-    if (!current_fault.empty() && !fault_latched_) {
-      fault_latched_ = true;
-      latched_reason_ = current_fault;
-      RCLCPP_ERROR(get_logger(), "Observed fault: %s (advisory only)",
-        latched_reason_.c_str());
+    if (!current_fault.empty()) {
+      latch_fault_locked(current_fault);
     }
     const auto e = observation_locked(now_steady);
 

@@ -50,7 +50,7 @@ The standalone `ghostwheel_pacmod3_adapter` executable is built only when
 and [PACMod3 message definitions](https://github.com/astuff/pacmod3_msgs).
 The previously suggested `autowarefoundation/pacmod3_ros2` URL is not available.
 
-The PACMod3 driver must already be connected and configured by authorized
+Run **either** the base `ghostwheel_vehicle_interface` node **or** this PACMod observer when publishing the same Autoware status topics; avoid multiple conflicting publishers.\n\nThe PACMod3 driver must already be connected and configured by authorized
 personnel, using the vehicle's supported DBC and manual. This adapter is a
 **subscriber-only monitor** for PACMod3 and an Autoware feedback publisher.
 It does not open CAN, publish to `/pacmod/*_cmd`, call a DBW enable service,

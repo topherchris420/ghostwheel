@@ -1,0 +1,33 @@
+name: PACMod observer contract
+on:
+  pull_request:
+    paths:
+      - 'ros2/ghostwheel_vehicle_interface/**'
+      - '.github/workflows/pacmod-observer-contract.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'ros2/ghostwheel_vehicle_interface/**'
+      - '.github/workflows/pacmod-observer-contract.yml'
+permissions:
+  contents: read
+jobs:
+  observer-state:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile and exercise observer state decisions
+        run: |
+          g++ -std=c++17 -Wall -Wextra -Werror -pedantic \
+            -Iros2/ghostwheel_vehicle_interface/include \
+            ros2/ghostwheel_vehicle_interface/tests/pacmod_observer_state_test.cpp \
+            -o /tmp/pacmod_observer_state_test
+          /tmp/pacmod_observer_state_test
+      - name: Verify the observer has no physical command publishers
+        run: |
+          if grep -E 'create_publisher[<][[:space:]]*pacmod3_msgs|socket[[:space:]]*[(]|sendto[[:space:]]*[(]' \
+             ros2/ghostwheel_vehicle_interface/src/pacmod3_observer.cpp; then
+            echo 'Forbidden physical command capability appeared in passive adapter.'
+            exit 1
+          fi

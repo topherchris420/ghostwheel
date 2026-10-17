@@ -68,8 +68,8 @@ export default function InterfaceWorkflows() {
               parameters <code>--ros-args -p interface_type:=can -p can_device:=can0</code>.
             </p>
             <p>
-              Optional PACMod3 observation: after installing pacmod3_msgs, launch
-              {' '}<code>ros2 run ghostwheel_vehicle_interface ghostwheel_pacmod3_adapter</code>.
+              For PACMod3 feedback, install pacmod3_msgs and run{' '}
+              <code>ros2 run ghostwheel_vehicle_interface ghostwheel_pacmod3_adapter</code>.
               This browser does not connect to ROS. Physical actuation remains disabled.
             </p>
             <p>

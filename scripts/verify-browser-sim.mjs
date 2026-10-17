@@ -3,7 +3,7 @@
 import { build } from 'esbuild';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -144,6 +144,34 @@ try {
     tamper = error.message;
   }
   check(/mismatch/.test(tamper), 'edited recording is rejected', tamper);
+
+  // Browser exports must validate in a standalone Python process, not merely in the UI.
+  const portable = new sim.Recorder(4);
+  const portableWorld = new sim.World('aster', 42);
+  portable.begin(portableWorld);
+  for (let i = 0; i < 5; i++) {
+    portableWorld.step();
+    portable.frame(portableWorld);
+  }
+  const portableId = portable.run_id;
+  const bundle = await portable.evidence(portableId);
+  const evidenceFile = join(work, 'portable-evidence.json');
+  writeFileSync(evidenceFile, JSON.stringify(bundle), 'utf8');
+  const verified = spawnSync(python, ['scripts/verify-evidence.py', evidenceFile], {
+    cwd: root,
+    encoding: 'utf8',
+  });
+  check(
+    verified.status === 0 && JSON.parse(verified.stdout).frames === 5,
+    'standalone Python verifier accepts browser-exported event ledger',
+    verified.stderr.trim(),
+  );
+  const restored = new sim.Recorder(4);
+  await restored.restoreArchive(portable.archive());
+  check(
+    (await restored.replay(portableId)).integrity.matched_frames === 5,
+    'archived browser sessions restore with full verification',
+  );
 
   // Service routes, a full-length interactive run, memory use and replay time.
   const backend = new sim.BrowserBackend();

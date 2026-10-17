@@ -80,7 +80,7 @@ def main():
             assert status == 200 and client["available"] is True and client["connected"] is False, client
             status,experiments=request("/api/experiments",{"seed":42})
             assert status == 200 and experiments["totals"]["failed"] == 0 and experiments["totals"]["assertions"] >= 60,experiments
-            receipt={"artifact":executable.name,"sha256":hashlib.sha256(executable.read_bytes()).hexdigest(),"checks":["private readiness on OS-assigned loopback port","health reports simulation only","desktop GET bootstrap/state denied without token","POST control denied without token","authenticated bootstrap exposes three architectures","invalid control rejected","bundled CARLA client import passes without simulator server","packaged experiment suite executed"],"carla_client":client,"experiments":experiments,"elapsed_s":round(time.perf_counter()-started,3),"carla_server_exercised":False}
+            receipt={"status":"passed","artifact":executable.name,"sha256":hashlib.sha256(executable.read_bytes()).hexdigest(),"checks":["private readiness on OS-assigned loopback port","health reports simulation only","desktop GET bootstrap/state denied without token","POST control denied without token","authenticated bootstrap exposes three architectures","invalid control rejected","bundled CARLA client import passes without simulator server","packaged experiment suite executed"],"carla_client":client,"experiments":experiments,"elapsed_s":round(time.perf_counter()-started,3),"carla_server_exercised":False}
             output=ROOT/"output"/"verification"/"desktop-sidecar-smoke.json";output.parent.mkdir(parents=True,exist_ok=True);output.write_text(json.dumps(receipt,indent=2),encoding="utf-8")
         finally:
             close_job()

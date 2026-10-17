@@ -11,6 +11,7 @@ import {
   Terminal,
 } from 'lucide-react';
 import { fmt, SectionTitle } from './components';
+import InterfaceWorkflows from './InterfaceWorkflows';
 import type { ConsoleModel } from './useConsole';
 export default function Protocol({ m }: { m: ConsoleModel }) {
   const { snapshot, boot, carla, connected, busy, replay } = m;
@@ -33,6 +34,7 @@ export default function Protocol({ m }: { m: ConsoleModel }) {
           </span>
         </div>
       </section>
+      <InterfaceWorkflows />
       <div className="protocol-grid">
         <section className="panel">
           <SectionTitle number="01" title="Command authorization path" />
@@ -102,7 +104,7 @@ export default function Protocol({ m }: { m: ConsoleModel }) {
         </section>
       </div>
       <section className="panel connector-panel">
-        <SectionTitle number="03" title="Actuation connectors">
+        <SectionTitle number="03" title="Simulator actuation connectors">
           <span className="tag cyan-tag">TRANSPORT POLICY: SIMULATION ONLY</span>
         </SectionTitle>
         <div className="profile-list connector-list">
@@ -142,9 +144,8 @@ export default function Protocol({ m }: { m: ConsoleModel }) {
           <div>
             <b>No physical actuation transport exists</b>
             <p>
-              The connector registry refuses every transport other than simulation. CAN, OBD, serial
-              and remote-device connectors cannot be registered, listed or reached through this
-              console.
+              The browser and Python actuator registry remain simulation-only. The standalone ROS 2
+              process supports passive CAN and serial monitoring, never physical actuation.
             </p>
           </div>
         </div>

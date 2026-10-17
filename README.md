@@ -4,14 +4,14 @@
 
 > A hands-on automotive cybersecurity lab where you can drive fictional electric vehicles, inject synthetic control faults, and investigate exactly how a safety boundary responds.
 >
-> **No real vehicle is connected or controlled.** Every driving command stays inside the built-in simulator or an explicitly connected local CARLA simulation.
+> **No real vehicle is driven by Ghostwheel.** Driving commands stay in the simulators. A separate, opt-in ROS 2 package can passively observe CAN or serial data from an authorized physical vehicle without sending actuator commands.
 
 ![Platforms: web and Windows x64](https://img.shields.io/badge/platform-web%20%7C%20Windows%20x64-172B3A)
 ![Scope: simulation only](https://img.shields.io/badge/actuation-simulation%20only-0B7379)
 ![Version: GW-01](https://img.shields.io/badge/research-GW--01-172B3A)
 [![License: MIT](https://img.shields.io/badge/license-MIT-0B7379)](LICENSE)
 
-**[Try it in your browser](https://ghostwheel-one.vercel.app)** · **[Start with the simulator](#get-behind-the-virtual-wheel)** · **[Explore the research lab](#four-ways-to-explore)** · **[Read the engineering notes](docs/engineering.md)** · **[Present it in five minutes](docs/presentation-guide.md)**
+**[ROS 2: simulator + passive vehicle monitoring](ros2/ghostwheel_vehicle_interface/README.md)** · **[Try it in your browser](https://ghostwheel-one.vercel.app)** · **[Start with the simulator](#get-behind-the-virtual-wheel)** · **[Explore the research lab](#four-ways-to-explore)** · **[Read the engineering notes](docs/engineering.md)** · **[Present it in five minutes](docs/presentation-guide.md)**
 
 ---
 
@@ -105,7 +105,7 @@ flowchart LR
 
 **Design choices that matter:**
 
-- **Simulation-only by construction.** The connector registry accepts only transports declared as `simulation`. Physical CAN, OBD, serial, and remote-vehicle actuation are not implemented.
+- **Simulation actuation only by construction.** The application connector registry accepts only `simulation` transports. A separate optional ROS package supports **read-only** physical CAN/serial observations, never physical actuation.
 - **Three independent models.** ASTER, VECTOR, and NOMAD maintain separate virtual state behind the same command interface.
 - **Deterministic built-in experiments.** A fixed **50 ms simulation step** and explicit seeds make runs reproducible. Interactive runs are capped at **8,000 ticks (400 simulated seconds)** before a reset.
 - **Visible failure handling.** Invalid commands request a safe state; an absent accepted heartbeat expires its six-tick lease and triggers the watchdog on the next tick (**350 ms in simulation time**).
@@ -161,6 +161,27 @@ npm run desktop:build
 The desktop build creates a packaged application and an NSIS installer under `output/release/`. Microsoft WebView2 is required; the installer can obtain its bootstrapper if needed. The current release is **unsigned**.
 
 Full prerequisites, packaging behavior, smoke-test commands, and compatibility-build notes: [Windows packaging guide](src-tauri/PACKAGING.md).
+
+## ROS 2 interface: choose between two workflows
+
+Ghostwheel now includes an **optional C++17 ROS 2 package** at [`ros2/ghostwheel_vehicle_interface`](ros2/ghostwheel_vehicle_interface/README.md).
+
+- **Simulation control:** Subscribe to Autoware's `/vehicle/command/actuation` and publish synthetic actuator and velocity reports. A software watchdog requests 100% virtual brake after a 100 ms command timeout.
+- **Physical vehicle monitoring:** On Linux, open an authorized SocketCAN interface, OBD serial port, or custom serial port **for receiving data only**. The package publishes node heartbeat and fault/mode status; it does not currently decode vehicle-specific telemetry into Autoware status messages.
+
+In **System protocol**, choose *Simulation controls* or *Physical vehicle diagnostics* to view the relevant setup. The web UI does not itself connect to your hardware monitor or send vehicle commands. The original simulator connector registry remains sealed against CAN and serial actuation.
+
+```bash
+# In a sourced ROS 2 / Autoware workspace with this repo in src/ghostwheel:
+colcon build --packages-select ghostwheel_vehicle_interface
+source install/setup.bash
+ros2 run ghostwheel_vehicle_interface ghostwheel_vehicle_interface --ros-args -p interface_type:=sim
+
+# Optional passive monitor, with a configured authorized Linux can0:
+ros2 run ghostwheel_vehicle_interface ghostwheel_vehicle_interface --ros-args -p interface_type:=can -p can_device:=can0
+```
+
+A ROS timer and shutdown callback are **not independent physical safety equipment**. No steering, accelerator, or brake messages are transmitted to actual vehicles in this implementation.
 
 ## Optional: connect to CARLA
 

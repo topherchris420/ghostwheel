@@ -1,0 +1,8 @@
+ghostwheel_vehicle_interface:
+  ros__parameters:
+    # sim: synthetic actuation & feedback. can/obd/serial: read-only monitor.
+    interface_type: "sim"
+    can_device: "can0"
+    serial_port: "/dev/ttyUSB0"
+    baud_rate: 115200
+    control_timeout_ms: 100

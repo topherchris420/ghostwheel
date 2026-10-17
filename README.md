@@ -68,11 +68,11 @@ These are **original teaching models**, not representations of actual vehicle ma
 
 Once installed:
 
-1. **Launch GHOSTWHEEL.** The first-run **Quick start** guide introduces the interface. Reopen it from the header whenever you want.
+1. **Launch GHOSTWHEEL.** The first-run **Quick start** guide introduces the interface. Follow the in-workspace **Drive → Challenge → Inspect → Keep** walkthrough, or hide it and explore freely.
 2. **Select ASTER, VECTOR, or NOMAD** in **Operations** and arm *simulation controls*.
-3. **Drive the test field.** Use the on-screen controls or the shortcuts below. Keep the app window focused.
-4. **Try a synthetic fault.** Watch the gateway decision, reason code, and resulting virtual safe state.
-5. **Run Research lab**, then visit **Forensic replay** to examine a recording. Export experiment or session JSON to share the evidence.
+3. **Drive the test field.** Hold **Accelerate**, **Brake**, or a steering button, or use the shortcuts below. Release a held control to coast or center the steering. Sliders keep their set values. Keep the app window focused.
+4. **Try a synthetic fault.** **Test a safeguard** explains the result in plain language, retains the reason code, and links directly to the recording.
+5. **Inspect and keep the evidence.** In **Forensic replay**, scrub the reconstructed path, choose 0.5×–4× playback, and read the integrity and session summaries. **Export session/replay** downloads JSON; **Open recording** reopens it later. **Research lab** compares all three architectures with a seeded suite.
 
 | Key | Action |
 | --- | --- |
@@ -82,6 +82,8 @@ Once installed:
 | **Space** | Safe Stop: disarm and brake the virtual vehicle |
 
 **Connection trouble?** The desktop launcher starts its own private, loopback-only backend. If you see **SIMULATION OFFLINE**, use **Reconnect** or **Retry** in Quick start. When running from source, confirm that the Python server is listening at `127.0.0.1:8765`.
+
+**Reopening evidence:** Exported session JSON files up to 64 MB can be opened in Forensic replay, entirely on your device. Imported files are validated for viewing and labeled **not verified here**: they contain snapshots, not the original event ledger, so an embedded verification flag is never treated as proof. Locally recorded sessions continue to receive hash-chain verification and, for the built-in model, physics recomputation. Experiment reports are a different JSON format and are not replay files.
 
 **A quick glossary:** *Arm* enables controls for the selected simulation. *Gateway* validates a command before virtual actuation. *Safe Stop* disarms controls and requests braking. *Replay* examines a saved run without sending commands.
 
@@ -141,6 +143,8 @@ python scripts/verify.py
 This generates local experiment/verification outputs. Check the resulting receipts and assertions before citing any measurements; a reproducible procedure is not a claim of universal fault coverage.
 
 **Check the browser edition against the Python backend:** `npm run verify:browser` compares trajectories, CAN frames, scenario verdicts and experiment totals between the two implementations.
+
+**Check the user workflow:** `npm run verify:workspace` exercises the React console against the browser simulator in a DOM test environment, including delayed-control/Safe Stop ordering, scenario-to-replay navigation, replay restart, import validation, and focus-loss stopping. `npm run format:check` and `npm run build` check formatting, types, and the production bundle. The DOM checks do not substitute for visual review or native Windows testing.
 
 ### Build the Windows application
 

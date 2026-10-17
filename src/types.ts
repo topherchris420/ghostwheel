@@ -80,12 +80,22 @@ export interface Run {
   kind: string;
   architecture_id: string;
   ticks: number;
+  seed?: number;
   summary: Record<string, unknown>;
 }
 export interface Replay {
   run: Run;
   frames: Snapshot[];
-  integrity: unknown;
+  integrity: {
+    verified: boolean;
+    recomputed: boolean;
+    events?: number;
+    matched_frames?: number;
+    matched_commands?: number;
+    head_sha256?: string;
+    limitation?: string;
+  };
+  source?: 'local' | 'imported';
 }
 export interface HistoryPoint {
   time: number;

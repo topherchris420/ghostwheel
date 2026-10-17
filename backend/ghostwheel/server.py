@@ -439,6 +439,17 @@ class Handler(BaseHTTPRequestHandler):
             body = json.loads(raw.decode('utf-8'), parse_constant=reject_constant, parse_float=finite_float, object_pairs_hook=unique_keys)
         except RecursionError as error:
             raise ValueError('json_nesting_too_deep') from error
+        # JSON decoders can accept deeper structures than the recorder can
+        # traverse. Bound depth explicitly before any command is recorded.
+        pending = [(body, 0)]
+        while pending:
+            value, depth = pending.pop()
+            if depth > 64:
+                raise ValueError('json_nesting_too_deep')
+            if isinstance(value, dict):
+                pending.extend((child, depth + 1) for child in value.values())
+            elif isinstance(value, list):
+                pending.extend((child, depth + 1) for child in value)
         if not isinstance(body, dict):
             raise ValueError('object_required')
         return body

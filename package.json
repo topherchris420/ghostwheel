@@ -12,7 +12,8 @@
         "desktop:build": "node scripts/desktop.mjs build",
         "format": "prettier --write \"src/**/*.{ts,tsx,css}\" index.html vite.config.ts \"tsconfig*.json\"",
         "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\" index.html vite.config.ts \"tsconfig*.json\"",
-        "verify:browser": "node --expose-gc scripts/verify-browser-sim.mjs"
+        "verify:browser": "node --expose-gc scripts/verify-browser-sim.mjs",
+        "verify:workspace": "node scripts/verify-workspace.mjs"
     },
     "dependencies": {
         "@fontsource/barlow-condensed": "^5.3.0",
@@ -29,6 +30,7 @@
         "@types/react-dom": "^19.0.0",
         "@vitejs/plugin-react": "^4.3.4",
         "esbuild": "0.25.12",
+        "jsdom": "26.1.0",
         "prettier": "3.9.10",
         "typescript": "~5.7.2",
         "vite": "^6.0.5"

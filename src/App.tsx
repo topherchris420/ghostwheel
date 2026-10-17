@@ -25,6 +25,7 @@ import Research from './Research';
 import Forensics from './Forensics';
 import Protocol from './Protocol';
 import Welcome from './Welcome';
+import Journey from './Journey';
 // Loaded on demand: it carries the full license texts.
 const About = lazy(() => import('./About'));
 export default function App() {
@@ -60,6 +61,9 @@ export default function App() {
   ];
   return (
     <div className="app-shell">
+      <a className="skip-link" href="#main-content">
+        Skip to workspace
+      </a>
       {showWelcome && (
         <Welcome
           connected={connected}
@@ -94,6 +98,7 @@ export default function App() {
               key={item.id}
               title={item.label}
               aria-label={item.label}
+              aria-current={tab === item.id ? 'page' : undefined}
               className={tab === item.id ? 'active' : ''}
               onClick={() => m.setTab(item.id)}
             >
@@ -155,11 +160,12 @@ export default function App() {
             <span className="mono tiny muted">AUTOMOTIVE CYBER-PHYSICAL RESEARCH</span>
           </div>
         </header>
-        <nav className="tabbar">
+        <nav className="tabbar" aria-label="Workspace sections">
           {navItems.map((item) => (
             <button
               key={item.id}
               className={tab === item.id ? 'active' : ''}
+              aria-current={tab === item.id ? 'page' : undefined}
               onClick={() => m.setTab(item.id)}
             >
               <span>{item.code}</span>
@@ -170,7 +176,7 @@ export default function App() {
             <LockKeyhole size={12} /> SIMULATOR ONLY
           </div>
         </nav>
-        <main>
+        <main id="main-content" tabIndex={-1}>
           <div className="page-heading">
             <div>
               <div className="eyebrow">
@@ -233,7 +239,7 @@ export default function App() {
               ) : (
                 <button
                   className="button secondary"
-                  disabled={!connected || !!busy}
+                  disabled={(!connected && !replay) || !!busy}
                   onClick={m.exportRun}
                 >
                   <ArrowDownToLine size={14} /> Export {replay ? 'replay' : 'session'}
@@ -297,6 +303,7 @@ export default function App() {
               </button>
             </div>
           )}
+          <Journey m={m} />
           {tab === 'operations' && <Operations m={m} />} {tab === 'research' && <Research m={m} />}{' '}
           {tab === 'forensics' && <Forensics m={m} />} {tab === 'protocol' && <Protocol m={m} />}
           <footer>

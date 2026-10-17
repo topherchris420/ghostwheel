@@ -84,7 +84,7 @@ export default function Welcome({ connected, onClose, onNavigate, onReconnect }:
             <div>
               <strong>Drive on the test field</strong>
               <p>
-                Arm the simulation. Use the sliders or W/A/S/D to move. Press Space for Safe Stop.
+                Enable controls, then hold Accelerate or W/A/S/D to move. Press Space for Safe Stop.
               </p>
               <span className="welcome-shortcut">
                 <Keyboard size={13} /> Keep the app focused while driving
@@ -96,8 +96,8 @@ export default function Welcome({ connected, onClose, onNavigate, onReconnect }:
             <div>
               <strong>See what the safeguards catch</strong>
               <p>
-                Run a synthetic scenario, then visit Research for repeatable tests and Forensics for
-                replay.
+                Follow the four-step walkthrough: drive, test a fault, inspect the replay, and
+                export your evidence. Reopen saved JSON recordings in Forensic replay.
               </p>
             </div>
           </li>

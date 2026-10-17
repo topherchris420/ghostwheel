@@ -2,6 +2,7 @@ import {
   ArrowDownToLine,
   ArrowUpRight,
   CheckCheck,
+  CircleAlert,
   ChevronDown,
   Cpu,
   FlaskConical,
@@ -24,6 +25,7 @@ import {
   TestField,
 } from './components';
 import { describeReason } from './messages';
+import DrivePad from './DrivePad';
 import type { ConsoleModel } from './useConsole';
 export default function Operations({ m }: { m: ConsoleModel }) {
   const {
@@ -107,7 +109,7 @@ export default function Operations({ m }: { m: ConsoleModel }) {
               </div>
             </div>
           </section>
-          <section className="panel controls-panel">
+          <section className="panel controls-panel" id="driving-controls">
             <SectionTitle number="02" title="Virtual driving controls">
               <SlidersHorizontal size={14} />
             </SectionTitle>
@@ -123,15 +125,19 @@ export default function Operations({ m }: { m: ConsoleModel }) {
                 }
                 aria-pressed={armed}
                 disabled={!connected || !!replay || !!busy || snapshot?.paused}
-                onClick={() => (armed ? void m.safeStop() : m.setArmed(true))}
+                onClick={() => (armed ? void m.safeStop() : m.startControls())}
               >
                 <span />
               </button>
             </div>
             <p className="control-quicktip">
-              Turn on the switch to unlock virtual steering and pedals. These controls cannot
-              connect to a real vehicle.
+              {snapshot?.paused
+                ? 'Resume the simulation to enable driving controls.'
+                : armed
+                  ? 'Hold the buttons below or use W/A/S/D. Sliders keep their set value until you change it.'
+                  : 'Enable controls, then hold Accelerate to begin. Your drive is recorded automatically.'}
             </p>
+            <DrivePad m={m} />
             <div className="steering-visual">
               <SteeringWheel angle={snapshot?.vehicle.steer_deg || 0} />
               <div>
@@ -231,7 +237,7 @@ export default function Operations({ m }: { m: ConsoleModel }) {
               </span>
               <button
                 className="icon-button"
-                disabled={!connected || !!replay}
+                disabled={!connected || !!replay || !!busy}
                 aria-label={snapshot?.paused ? 'Resume simulator' : 'Pause simulator'}
                 onClick={m.togglePause}
               >
@@ -399,7 +405,7 @@ export default function Operations({ m }: { m: ConsoleModel }) {
             </div>
           </section>
           <section className="panel scenario-panel">
-            <SectionTitle number="08" title="Scenario injection">
+            <SectionTitle number="08" title="Test a safeguard">
               <FlaskConical size={14} />
             </SectionTitle>
             <p>Exercise the gateway with bounded, synthetic fault scenarios.</p>
@@ -425,20 +431,47 @@ export default function Operations({ m }: { m: ConsoleModel }) {
             </div>
             <button
               className="button amber-button"
-              disabled={!connected || !scenario || !!busy || !!replay}
+              disabled={!connected || !scenario || !!busy || !!replay || snapshot?.paused}
               onClick={m.executeScenario}
+              title={snapshot?.paused ? 'Resume the simulation first' : undefined}
             >
               <Play size={12} />
               {busy === 'scenario' ? 'Executing…' : 'Run scenario'}
               <ArrowUpRight size={13} />
             </button>
             {scenarioResult != null && (
-              <details className="scenario-result">
-                <summary>
-                  <CheckCheck size={12} /> View scenario evidence
-                </summary>
-                <pre>{JSON.stringify(scenarioResult, null, 2)}</pre>
-              </details>
+              <div
+                className={'scenario-outcome ' + (scenarioResult.passed ? 'passed' : 'failed')}
+                role="status"
+              >
+                <strong>
+                  {scenarioResult.passed ? <ShieldCheck size={16} /> : <CircleAlert size={16} />}
+                  {scenarioResult.passed
+                    ? 'Safeguard responded as expected'
+                    : 'This scenario needs investigation'}
+                </strong>
+                <span>{scenarioResult.name}</span>
+                <p>{describeReason(scenarioResult.reason) || scenarioResult.reason}.</p>
+                {scenarioResult.watchdog_sim_ms !== undefined && (
+                  <p>
+                    Safe stop requested after {scenarioResult.watchdog_sim_ms} ms of simulation
+                    time.
+                  </p>
+                )}
+                <button
+                  className="text-button"
+                  disabled={!!busy || !snapshot}
+                  onClick={() => snapshot && m.loadReplay(snapshot.run_id)}
+                >
+                  Inspect this recording <ArrowUpRight size={13} />
+                </button>
+                <details className="scenario-result">
+                  <summary>
+                    <CheckCheck size={12} /> View scenario evidence
+                  </summary>
+                  <pre>{JSON.stringify(scenarioResult, null, 2)}</pre>
+                </details>
+              </div>
             )}
           </section>
           <section className="isolation-note">

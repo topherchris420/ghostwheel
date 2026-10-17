@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { bootstrap, discoverBackend, openStream, request, setToken } from './api';
 import { clamp, saveJson } from './components';
+import { MAX_IMPORT_BYTES, parseReplayFile } from './evidence';
+import type { ScenarioResult } from './sim/experiments';
 import type { Bootstrap, ExperimentReport, HistoryPoint, Replay, Run, Snapshot } from './types';
 export type Tab = 'operations' | 'research' | 'forensics' | 'protocol';
 // The steering chart shows a fixed window of simulation time, independent of update rate.
@@ -19,13 +21,15 @@ export function useConsole() {
     [history, setHistory] = useState<HistoryPoint[]>([]),
     [busy, setBusy] = useState(''),
     [scenario, setScenario] = useState(''),
-    [scenarioResult, setScenarioResult] = useState<unknown>(null),
+    [scenarioResult, setScenarioResult] = useState<ScenarioResult | null>(null),
     [report, setReport] = useState<ExperimentReport | null>(null),
     [seed, setSeed] = useState(42),
     [runs, setRuns] = useState<Run[]>([]),
     [replay, setReplay] = useState<Replay | null>(null),
     [replayIndex, setReplayIndex] = useState(0),
     [playing, setPlaying] = useState(false),
+    [playbackSpeed, setPlaybackSpeed] = useState(1),
+    [exportedRun, setExportedRun] = useState(''),
     [canPaused, setCanPaused] = useState(false),
     [heldFrames, setHeldFrames] = useState<Snapshot['can_frames']>([]),
     [carla, setCarla] = useState<{ available: boolean; connected: boolean; reason: string } | null>(
@@ -40,12 +44,28 @@ export function useConsole() {
     pollBusy = useRef(false),
     streamingRef = useRef(false),
     connectedRef = useRef(connected),
-    connectingRef = useRef(false);
+    connectingRef = useRef(false),
+    actionLock = useRef(false),
+    armedRef = useRef(false),
+    controlFlight = useRef<Promise<unknown> | null>(null),
+    stopFlight = useRef<Promise<void> | null>(null),
+    historyRun = useRef('');
   liveRef.current = live;
   connectedRef.current = connected;
   bootRef.current = boot;
   controlsRef.current = { steer, throttle, brake };
-  const snapshot = replay?.frames[replayIndex] || live,
+  const replaySnapshot = useMemo(() => {
+    const frame = replay?.frames[replayIndex];
+    if (!frame || !replay) return null;
+    // Stored frames contain only the latest trail point. Rebuild a visible path for playback.
+    return {
+      ...frame,
+      trail: replay.frames
+        .slice(Math.max(0, replayIndex - 240), replayIndex + 1)
+        .map((s) => ({ x_m: s.vehicle.x_m, y_m: s.vehicle.y_m })),
+    };
+  }, [replay, replayIndex]);
+  const snapshot = replaySnapshot || live,
     arch = boot?.architectures.find((a) => a.id === snapshot?.vehicle.architecture_id),
     frames = canPaused ? heldFrames : snapshot?.can_frames || [];
   const adoptBootstrap = (value: Bootstrap) => {
@@ -55,7 +75,10 @@ export function useConsole() {
     sequence.current = 0;
     lastControlTick.current = 0;
     setScenario((s) => s || value.scenarios[0]?.id || '');
-    if (value.snapshot) setLive(value.snapshot);
+    if (value.snapshot) {
+      liveRef.current = value.snapshot;
+      setLive(value.snapshot);
+    }
   };
   const connect = useCallback(async () => {
     if (connectingRef.current) return;
@@ -71,6 +94,7 @@ export function useConsole() {
     } catch (e) {
       connectedRef.current = false;
       setConnected(false);
+      armedRef.current = false;
       setArmed(false);
       setError(e instanceof Error ? e.message : 'Backend unavailable');
     } finally {
@@ -85,12 +109,15 @@ export function useConsole() {
     return () => clearInterval(retry);
   }, [connect]);
   const ingest = useCallback((state: Snapshot) => {
+    liveRef.current = state;
     setLive(state);
     connectedRef.current = true;
     setConnected(true);
+    const changedRun = historyRun.current !== state.run_id;
+    historyRun.current = state.run_id;
     setHistory((points) => {
       const last = points.at(-1);
-      if (last?.time === state.sim_time) return points;
+      if (!changedRun && last?.time === state.sim_time) return points;
       const point = {
         time: state.sim_time,
         steer: state.vehicle.steer_deg,
@@ -99,7 +126,7 @@ export function useConsole() {
         latency: state.metrics.p95_gateway_ms,
       };
       // Simulation time running backwards means a new run: start the chart over.
-      if (last && state.sim_time < last.time) return [point];
+      if (changedRun || (last && state.sim_time < last.time)) return [point];
       return [...points, point].filter((p) => p.time > state.sim_time - HISTORY_SECONDS);
     });
   }, []);
@@ -143,6 +170,7 @@ export function useConsole() {
       } catch (e) {
         connectedRef.current = false;
         setConnected(false);
+        armedRef.current = false;
         setArmed(false);
         setError(e instanceof Error ? e.message : 'Backend connection lost');
       } finally {
@@ -157,7 +185,7 @@ export function useConsole() {
     const id = setInterval(async () => {
       const state = liveRef.current,
         init = bootRef.current;
-      if (!state || !init || state.paused || sending) return;
+      if (!state || !init || state.paused || sending || !armedRef.current) return;
       const profile = init.architectures.find((a) => a.id === state.vehicle.architecture_id);
       if (!profile) return;
       const desired = controlsRef.current,
@@ -171,7 +199,7 @@ export function useConsole() {
       sending = true;
       lastControlTick.current = state.tick;
       try {
-        const result = await request<{ accepted: boolean; reason: string }>('/api/control', {
+        const pending = request<{ accepted: boolean; reason: string }>('/api/control', {
           vehicle_id: state.vehicle.id,
           steer: angle / profile.max_steer_deg,
           throttle: desired.throttle,
@@ -184,7 +212,11 @@ export function useConsole() {
           capability: init.token,
           session_id: init.session_id,
         });
+        controlFlight.current = pending;
+        const result = await pending;
+        if (!armedRef.current) return;
         if (!result.accepted) {
+          armedRef.current = false;
           setArmed(false);
           setSteer(0);
           setThrottle(0);
@@ -192,40 +224,72 @@ export function useConsole() {
           setError('Command rejected: ' + result.reason);
         }
       } catch (e) {
+        armedRef.current = false;
         setArmed(false);
         setError(e instanceof Error ? e.message : 'Control failed');
       } finally {
+        controlFlight.current = null;
         sending = false;
       }
     }, 100);
     return () => clearInterval(id);
   }, [armed, connected, replay]);
-  const safeStop = useCallback(async () => {
+  const stopControls = useCallback(() => {
+    if (stopFlight.current) return stopFlight.current;
+    armedRef.current = false;
     setArmed(false);
+    controlsRef.current = { steer: 0, throttle: 0, brake: 0 };
     setSteer(0);
     setThrottle(0);
     setBrake(0);
-    const state = liveRef.current;
-    if (!state) return;
+    // A previously sent control must settle before the final stop, so a late
+    // accepted command cannot re-enable motion after a stop or a session reset.
+    const stopping = (async () => {
+      await controlFlight.current?.catch(() => {});
+      const state = liveRef.current;
+      if (state && connectedRef.current)
+        await request('/api/stop', { vehicle_id: state.vehicle.id });
+    })();
+    stopFlight.current = stopping;
+    void stopping
+      .finally(() => {
+        stopFlight.current = null;
+      })
+      .catch(() => {});
+    return stopping;
+  }, []);
+  const safeStop = useCallback(async () => {
     try {
-      await request('/api/stop', { vehicle_id: state.vehicle.id });
+      await stopControls();
       setNotice('Safe stop applied. Simulator actuation disarmed.');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Safe stop failed');
     }
-  }, []);
+  }, [stopControls]);
+  const startControls = () => {
+    if (!connected || actionLock.current || stopFlight.current || replay || liveRef.current?.paused)
+      return;
+    setSteer(0);
+    setThrottle(0);
+    setBrake(0);
+    controlsRef.current = { steer: 0, throttle: 0, brake: 0 };
+    armedRef.current = true;
+    setArmed(true);
+    setNotice('Controls enabled. Hold Accelerate or W to drive; release to coast.');
+  };
   useEffect(() => {
+    const heldKeys = new Set<string>();
     const down = (e: KeyboardEvent) => {
       const target = e.target instanceof Element ? e.target : null;
       if (document.querySelector('dialog[open]')) return;
-      if (e.code === 'Space' && tab === 'operations' && !replay) {
+      if (e.code === 'Space' && tab === 'operations' && !replay && armedRef.current) {
         e.preventDefault();
         void safeStop();
         return;
       }
-      if (target?.closest('input:not([type=range]),select,textarea,[contenteditable=true]')) return;
-      if (target?.matches('input[type=range]') && e.code.startsWith('Arrow')) return;
-      if (!armed || replay || tab !== 'operations') return;
+      if (target?.closest('input,select,textarea,[contenteditable=true]')) return;
+      if (e.altKey || e.ctrlKey || e.metaKey) return;
+      if (!armedRef.current || replay || tab !== 'operations') return;
       if (
         [
           'KeyA',
@@ -237,8 +301,10 @@ export function useConsole() {
           'KeyS',
           'ArrowDown',
         ].includes(e.code)
-      )
+      ) {
         e.preventDefault();
+        heldKeys.add(e.code);
+      }
       if (['KeyA', 'ArrowLeft'].includes(e.code)) setSteer(-0.65);
       if (['KeyD', 'ArrowRight'].includes(e.code)) setSteer(0.65);
       if (['KeyW', 'ArrowUp'].includes(e.code)) {
@@ -251,20 +317,27 @@ export function useConsole() {
       }
     };
     const up = (e: KeyboardEvent) => {
+      if (!heldKeys.delete(e.code)) return;
       if (['KeyA', 'ArrowLeft', 'KeyD', 'ArrowRight'].includes(e.code)) setSteer(0);
       if (['KeyW', 'ArrowUp'].includes(e.code)) setThrottle(0);
       if (['KeyS', 'ArrowDown'].includes(e.code)) setBrake(0);
     };
     const blur = () => {
-      if (armed) void safeStop();
+      heldKeys.clear();
+      if (armedRef.current) void safeStop();
+    };
+    const visibility = () => {
+      if (document.hidden) blur();
     };
     window.addEventListener('keydown', down);
     window.addEventListener('keyup', up);
     window.addEventListener('blur', blur);
+    document.addEventListener('visibilitychange', visibility);
     return () => {
       window.removeEventListener('keydown', down);
       window.removeEventListener('keyup', up);
       window.removeEventListener('blur', blur);
+      document.removeEventListener('visibilitychange', visibility);
     };
   }, [armed, replay, tab, safeStop]);
   useEffect(() => {
@@ -276,23 +349,32 @@ export function useConsole() {
     return () => clearTimeout(id);
   }, [notice]);
   const action = async (key: string, fn: () => Promise<void>) => {
+    if (actionLock.current) return;
+    actionLock.current = true;
     setBusy(key);
     setError('');
+    setNotice('');
     try {
       await fn();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Operation failed');
     } finally {
+      actionLock.current = false;
       setBusy('');
     }
   };
   const reset = (id: string) =>
     void action('reset', async () => {
+      await stopControls();
       setArmed(false);
       setSteer(0);
       setThrottle(0);
       setBrake(0);
       setReplay(null);
+      setPlaying(false);
+      setScenarioResult(null);
+      setCanPaused(false);
+      setHeldFrames([]);
       setHistory([]);
       const value = await request<Bootstrap>('/api/reset', { architecture_id: id, seed });
       adoptBootstrap(value);
@@ -317,10 +399,10 @@ export function useConsole() {
           }
           return i + 1;
         }),
-      50,
+      50 / playbackSpeed,
     );
     return () => clearInterval(id);
-  }, [playing, replay]);
+  }, [playing, replay, playbackSpeed]);
   useEffect(() => {
     if (tab === 'protocol' && connected)
       void request<{ available: boolean; connected: boolean; reason: string }>('/api/carla/status')
@@ -329,8 +411,13 @@ export function useConsole() {
   }, [tab, connected]);
   const loadReplay = (id: string) =>
     void action('replay', async () => {
-      await safeStop();
-      setReplay(await request<Replay>('/api/replay?id=' + encodeURIComponent(id)));
+      await stopControls();
+      const value = await request<Replay>('/api/replay?id=' + encodeURIComponent(id));
+      if (!value.frames.length)
+        throw new Error('This recording has no frames yet. Drive briefly, then try again.');
+      setReplay({ ...value, source: 'local' });
+      setTab('forensics');
+      setCanPaused(false);
       setReplayIndex(0);
       setPlaying(false);
       setNotice('Recorded frames loaded. Replay is read-only.');
@@ -339,10 +426,25 @@ export function useConsole() {
     setReplay(null);
     setPlaying(false);
   };
+  const importReplay = (file: File) =>
+    void action('import', async () => {
+      if (file.size > MAX_IMPORT_BYTES)
+        throw new Error('Choose a session file smaller than 64 MB.');
+      const value = parseReplayFile(await file.text());
+      await stopControls();
+      setReplay(value);
+      setReplayIndex(0);
+      setPlaying(false);
+      setCanPaused(false);
+      setTab('forensics');
+      setNotice('Recording opened for viewing. Imported snapshots are not independently verified.');
+    });
   const exportRun = () =>
     void action('export', async () => {
       if (replay) {
         saveJson(replay, 'ghostwheel-' + replay.run.id + '.json');
+        setExportedRun(replay.run.id);
+        setNotice('Download requested. Keep this JSON file; open it later in Forensic replay.');
         return;
       }
       if (!live) throw new Error('No live run to export');
@@ -350,16 +452,19 @@ export function useConsole() {
         await request<Replay>('/api/replay?id=' + encodeURIComponent(live.run_id)),
         'ghostwheel-' + live.run_id + '.json',
       );
+      setExportedRun(live.run_id);
+      setNotice('Download requested. Keep this JSON file; open it later in Forensic replay.');
     });
   const executeScenario = () =>
     void action('scenario', async () => {
-      await safeStop();
-      setScenarioResult(await request('/api/scenario', { scenario_id: scenario }));
+      await stopControls();
+      setScenarioResult(null);
+      setScenarioResult(await request<ScenarioResult>('/api/scenario', { scenario_id: scenario }));
       setNotice('Synthetic scenario complete. Inspect gateway events and result.');
     });
   const runExperiments = () =>
     void action('experiments', async () => {
-      await safeStop();
+      await stopControls();
       const value = await request<ExperimentReport>('/api/experiments', { seed });
       setReport(value);
       setNotice(
@@ -368,7 +473,7 @@ export function useConsole() {
     });
   const togglePause = () =>
     void action('pause', async () => {
-      if (armed) await safeStop();
+      if (armed) await stopControls();
       await request('/api/pause', { paused: !snapshot?.paused });
     });
   const toggleCan = () => {
@@ -377,7 +482,8 @@ export function useConsole() {
   };
   const toggleCarla = () =>
     void action('carla', async () => {
-      await safeStop();
+      await stopControls();
+      setScenarioResult(null);
       const value = await request<Bootstrap>(
         carla?.connected ? '/api/carla/disconnect' : '/api/carla/connect',
         carla?.connected ? {} : { blueprint: 'vehicle.tesla.model3', seed },
@@ -389,7 +495,8 @@ export function useConsole() {
     });
   const selectConnector = (id: string) =>
     void action('connector', async () => {
-      await safeStop();
+      await stopControls();
+      setScenarioResult(null);
       const active = liveRef.current?.connector || bootRef.current?.connector || 'builtin';
       if (id === active) return;
       let value: Bootstrap | null = null;
@@ -405,15 +512,19 @@ export function useConsole() {
           : `Actuation routed through the ${id.toUpperCase()} simulation connector. New run recorded.`,
       );
     });
-  const displayHistory = replay
-    ? replay.frames.slice(Math.max(0, replayIndex - 240), replayIndex + 1).map((s) => ({
-        time: s.sim_time,
-        steer: s.vehicle.steer_deg,
-        target: s.vehicle.target_steer_deg,
-        speed: s.vehicle.speed_mps * 3.6,
-        latency: s.metrics.p95_gateway_ms,
-      }))
-    : history;
+  const displayHistory = useMemo(
+    () =>
+      replay
+        ? replay.frames.slice(Math.max(0, replayIndex - 240), replayIndex + 1).map((s) => ({
+            time: s.sim_time,
+            steer: s.vehicle.steer_deg,
+            target: s.vehicle.target_steer_deg,
+            speed: s.vehicle.speed_mps * 3.6,
+            latency: s.metrics.p95_gateway_ms,
+          }))
+        : history,
+    [replay, replayIndex, history],
+  );
   return {
     tab,
     setTab,
@@ -427,7 +538,7 @@ export function useConsole() {
     notice,
     setNotice,
     armed,
-    setArmed,
+    startControls,
     steer,
     setSteer,
     throttle,
@@ -447,6 +558,9 @@ export function useConsole() {
     setReplayIndex,
     playing,
     setPlaying,
+    playbackSpeed,
+    setPlaybackSpeed,
+    exportedRun,
     canPaused,
     carla,
     arch,
@@ -458,6 +572,7 @@ export function useConsole() {
     getRuns,
     action,
     loadReplay,
+    importReplay,
     exitReplay,
     exportRun,
     executeScenario,

@@ -1,6 +1,10 @@
-﻿import {
+import { useRef } from 'react';
+import {
+  ArrowRight,
   ChevronRight,
+  CircleAlert,
   Database,
+  FileUp,
   Pause,
   Play,
   RefreshCw,
@@ -9,10 +13,20 @@
 } from 'lucide-react';
 import { edition } from './api';
 import { SectionTitle, TestField } from './components';
+import { durationLabel } from './evidence';
 import { RETAINED_RUNS } from './sim/limits';
 import type { ConsoleModel } from './useConsole';
+
 export default function Forensics({ m }: { m: ConsoleModel }) {
   const { runs, replay, busy, snapshot, connected, playing, replayIndex } = m;
+  const fileInput = useRef<HTMLInputElement>(null);
+  const integrity = replay?.integrity;
+  const imported = replay?.source === 'imported';
+  const duration = replay?.frames.at(-1)?.sim_time ?? 0;
+  const togglePlayback = () => {
+    if (!playing && replay && replayIndex >= replay.frames.length - 1) m.setReplayIndex(0);
+    m.setPlaying((v) => !v);
+  };
   return (
     <div className="forensics-layout">
       <section className="panel run-library">
@@ -20,67 +34,127 @@ export default function Forensics({ m }: { m: ConsoleModel }) {
           <button
             className="icon-button"
             aria-label="Refresh recorded sessions"
+            disabled={!connected || !!busy}
             onClick={() => void m.action('runs', m.getRuns)}
           >
             <RefreshCw size={14} />
           </button>
         </SectionTitle>
+        <div className="recording-actions">
+          <button
+            className="button secondary"
+            disabled={!!busy}
+            onClick={() => fileInput.current?.click()}
+          >
+            <FileUp size={15} /> Open recording
+          </button>
+          <input
+            ref={fileInput}
+            type="file"
+            accept=".json,application/json"
+            className="visually-hidden"
+            tabIndex={-1}
+            aria-label="Open session JSON file"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              event.target.value = '';
+              if (file) m.importReplay(file);
+            }}
+          />
+          <p>Reopen an exported session JSON. The file stays on your device.</p>
+        </div>
         <div className="run-library-heading">
           <Database size={15} />
-          {runs.length} {edition === 'browser' ? 'RECENT' : 'LOCAL'} RUNS{' '}
-          <span>
-            {edition === 'browser' ? 'In-memory evidence store' : 'SQLite evidence store'}
-          </span>
+          {runs.length} {edition === 'browser' ? 'RECENT' : 'LOCAL'} RUNS
         </div>
         {edition === 'browser' && (
           <p className="run-library-note">
-            This tab keeps the {RETAINED_RUNS} most recent runs until you close it. Export a session
-            to keep it.
+            The {RETAINED_RUNS} most recent runs stay in this tab until it closes or reloads.
+            Download a session to keep it.
           </p>
         )}
-        {busy === 'replay' && (
+        {(busy === 'replay' || busy === 'import') && (
           <div className="run-library-progress" role="status">
-            <RefreshCw className="spin" size={13} /> Verifying the recording’s hash chain and
-            recomputing its physics…
+            <RefreshCw className="spin" size={13} />
+            {busy === 'import'
+              ? 'Checking the recording file…'
+              : 'Verifying the event chain and checking available physics reconstruction…'}
+          </div>
+        )}
+        {imported && (
+          <div className="imported-file">
+            <FileUp size={15} />
+            <div>
+              <b>Opened from a file</b>
+              <span>
+                {replay.run.architecture_id.toUpperCase()} · {replay.run.id}
+              </span>
+            </div>
           </div>
         )}
         {runs.length ? (
           runs.map((run) => (
             <button
-              className={'run-item ' + (replay?.run.id === run.id ? 'selected' : '')}
+              className={'run-item ' + (replay?.run.id === run.id && !imported ? 'selected' : '')}
               key={run.id}
               onClick={() => m.loadReplay(run.id)}
-              disabled={!!busy}
+              disabled={!!busy || !connected}
             >
               <div>
-                <span className="tag">{run.kind}</span>
-                <span>{run.architecture_id}</span>
+                <span className="tag">{run.id === m.live?.run_id ? 'CURRENT RUN' : run.kind}</span>
                 <ChevronRight size={14} />
               </div>
-              <b>{run.id}</b>
+              <b>
+                {run.architecture_id.toUpperCase()}{' '}
+                <small>· {durationLabel(run.ticks * 0.05)}</small>
+              </b>
               <div>
                 <span>{new Date(run.created_at).toLocaleString()}</span>
-                <span>{run.ticks} ticks</span>
+                <span>{run.ticks} frames</span>
               </div>
+              <small className="run-identifier">{run.id}</small>
             </button>
           ))
         ) : (
-          <div className="table-empty">
-            No recorded sessions yet. Reset the simulation to archive a run.
+          <div className="recording-empty">
+            <Database size={26} />
+            <h3>Your drives become evidence.</h3>
+            <p>
+              Drive in Operations to create a recording, or open a session you previously
+              downloaded.
+            </p>
+            <button className="text-button" onClick={() => m.setTab('operations')}>
+              Go to Operations <ArrowRight size={13} />
+            </button>
           </div>
         )}
       </section>
       <div className="replay-main">
         <section className="panel">
           <SectionTitle number="02" title="Trajectory reconstruction">
-            <span className="tag">{replay ? 'RECORDED FRAMES' : 'LIVE PREVIEW'}</span>
+            <span className="tag">
+              {replay ? (imported ? 'IMPORTED SNAPSHOTS' : 'RECORDED FRAMES') : 'LIVE PREVIEW'}
+            </span>
           </SectionTitle>
+          {!replay && (
+            <div className="replay-instruction">
+              <Play size={18} />
+              <div>
+                <b>Choose a run to see its story.</b>
+                <p>
+                  Playback shows the recorded path. Pause, scrub or change speed to examine a
+                  moment.
+                </p>
+              </div>
+            </div>
+          )}
           <TestField snapshot={snapshot} connected={connected || !!replay} />
           <div className="replay-controls">
             <button
               className="button secondary"
               disabled={!replay?.frames.length}
-              onClick={() => m.setPlaying((v) => !v)}
+              aria-label={playing ? 'Pause replay' : 'Play replay'}
+              onClick={togglePlayback}
             >
               {playing ? <Pause size={14} /> : <Play size={14} />}
             </button>
@@ -97,11 +171,26 @@ export default function Forensics({ m }: { m: ConsoleModel }) {
               }}
             />
             <span className="mono tiny">
-              {replay ? `${replayIndex + 1} / ${replay.frames.length}` : 'SELECT A RUN'}
+              {replay
+                ? `${durationLabel(snapshot?.sim_time ?? 0)} / ${durationLabel(duration)}`
+                : 'SELECT A RUN'}
             </span>
+            <select
+              className="playback-speed"
+              aria-label="Playback speed"
+              value={m.playbackSpeed}
+              disabled={!replay}
+              onChange={(e) => m.setPlaybackSpeed(Number(e.target.value))}
+            >
+              {[0.5, 1, 2, 4].map((speed) => (
+                <option key={speed} value={speed}>
+                  {speed}×
+                </option>
+              ))}
+            </select>
             <button
               className="icon-button"
-              title="Reset replay position"
+              aria-label="Reset replay position"
               onClick={() => {
                 m.setPlaying(false);
                 m.setReplayIndex(0);
@@ -117,21 +206,96 @@ export default function Forensics({ m }: { m: ConsoleModel }) {
             <SectionTitle number="03" title="Evidence integrity">
               <ShieldCheck size={14} />
             </SectionTitle>
-            {replay ? (
-              <pre>{JSON.stringify(replay.integrity, null, 2)}</pre>
+            {replay && integrity ? (
+              <div
+                className={
+                  'integrity-card ' + (integrity.verified && !imported ? 'verified' : 'unverified')
+                }
+              >
+                <strong>
+                  {integrity.verified && !imported ? (
+                    <ShieldCheck size={20} />
+                  ) : (
+                    <CircleAlert size={20} />
+                  )}
+                  {imported
+                    ? 'Imported · not verified here'
+                    : integrity.verified
+                      ? 'Recording integrity verified'
+                      : 'Verification unavailable'}
+                </strong>
+                <p>
+                  {imported
+                    ? 'You can inspect these snapshots, but a file’s own verification claim is not proof.'
+                    : !integrity.verified
+                      ? 'This recording has not been verified. Do not treat its contents as checked evidence.'
+                      : integrity.recomputed
+                        ? 'The event chain is intact and the built-in physics reproduced the recorded states.'
+                        : 'The event chain is intact. This connector does not support built-in physics reconstruction.'}
+                </p>
+                {!imported && (
+                  <dl>
+                    <div>
+                      <dt>Events checked</dt>
+                      <dd>{integrity.events ?? '—'}</dd>
+                    </div>
+                    <div>
+                      <dt>Frames recomputed</dt>
+                      <dd>{integrity.recomputed ? integrity.matched_frames : 'Not supported'}</dd>
+                    </div>
+                  </dl>
+                )}
+                <details>
+                  <summary>Verification details &amp; limits</summary>
+                  <p>{integrity.limitation}</p>
+                  <pre>{JSON.stringify(integrity, null, 2)}</pre>
+                </details>
+              </div>
             ) : (
-              <div className="table-empty">Select a recorded session to verify its integrity.</div>
+              <div className="table-empty">
+                Open a recorded session to inspect its verification status.
+              </div>
             )}
           </div>
           <div className="panel">
-            <SectionTitle number="04" title="Session manifest">
+            <SectionTitle number="04" title="Session summary">
               <Database size={14} />
             </SectionTitle>
             {replay ? (
-              <pre>{JSON.stringify(replay.run, null, 2)}</pre>
+              <div className="session-summary">
+                <dl>
+                  <div>
+                    <dt>Architecture</dt>
+                    <dd>{replay.run.architecture_id.toUpperCase()}</dd>
+                  </div>
+                  <div>
+                    <dt>Duration</dt>
+                    <dd>{durationLabel(duration)}</dd>
+                  </div>
+                  <div>
+                    <dt>Frames</dt>
+                    <dd>{replay.frames.length.toLocaleString()}</dd>
+                  </div>
+                  <div>
+                    <dt>Seed</dt>
+                    <dd>{replay.run.seed ?? 'Not recorded'}</dd>
+                  </div>
+                  <div>
+                    <dt>Accepted / rejected</dt>
+                    <dd>
+                      {replay.frames.at(-1)?.metrics.accepted} /{' '}
+                      {replay.frames.at(-1)?.metrics.rejected}
+                    </dd>
+                  </div>
+                </dl>
+                <details>
+                  <summary>Full session manifest</summary>
+                  <pre>{JSON.stringify(replay.run, null, 2)}</pre>
+                </details>
+              </div>
             ) : (
               <div className="table-empty">
-                Stored manifests include architecture, ticks and run summary.
+                The session summary will show its architecture, seed, duration and command outcomes.
               </div>
             )}
           </div>

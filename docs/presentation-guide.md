@@ -31,3 +31,9 @@ Load a recorded interactive run, verify the chain and builtin recomputation, scr
 "The measured findings describe this software and these finite synthetic scenarios. The CARLA adapter has contract tests; a real CARLA server driving run was not validated during this build. There is no real-car actuation connector. Next research steps are an independently validated CARLA run, stronger hardware-in-the-loop modeling and external signing of evidence."
 
 Use the technical report for questions about equations, threat model, evidence provenance, timing endpoints and source references.
+
+## Keeping and reopening a demonstration
+
+Use the four-step walkthrough in the workspace to connect a drive to a fault, its recording, and a JSON download. The touch controls work by holding a button; releasing it removes that input. Sliders retain their selected value.
+
+In Forensic replay, select the current run, read the verification summary, and use the timeline and 0.5×–4× speed selector to inspect it. Export the recording before closing or reloading the browser tab. Reopen it using **Open recording**. Imported snapshots are always marked **not verified here**, even if the file contains a previous verification claim; only the original local ledger supports the app’s integrity and recomputation checks.

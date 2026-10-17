@@ -40,7 +40,11 @@ export default function Research({ m }: { m: ConsoleModel }) {
                 min="0"
                 max="2147483647"
                 value={seed}
-                onChange={(e) => m.setSeed(clamp(Number(e.target.value), 0, 2147483647))}
+                step="1"
+                disabled={!!busy}
+                onChange={(e) =>
+                  m.setSeed(Math.floor(clamp(Number(e.target.value) || 0, 0, 2147483647)))
+                }
               />
             </label>
             <button
@@ -111,6 +115,24 @@ export default function Research({ m }: { m: ConsoleModel }) {
       </div>
       {report ? (
         <>
+          <section
+            className={'research-verdict ' + (report.totals.failed ? 'failed' : 'passed')}
+            role="status"
+          >
+            {report.totals.failed ? <CircleAlert size={24} /> : <ShieldCheck size={24} />}
+            <div>
+              <h2>
+                {report.totals.failed
+                  ? `${report.totals.failed} checks need investigation.`
+                  : 'Every check in this suite passed.'}
+              </h2>
+              <p>
+                {report.totals.passed} of {report.totals.assertions} assertions passed across{' '}
+                {report.architectures.length} fictional architectures with seed {report.seed}. These
+                results describe the tested simulation scenarios.
+              </p>
+            </div>
+          </section>
           <div className="report-meta">
             <span className="tag cyan-tag">
               {report.simulation_only ? 'SIMULATION EVIDENCE' : 'EVIDENCE'}

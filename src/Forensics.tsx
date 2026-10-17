@@ -5,6 +5,7 @@ import {
   CircleAlert,
   Database,
   FileUp,
+  Download,
   Pause,
   Play,
   RefreshCw,
@@ -63,6 +64,18 @@ export default function Forensics({ m }: { m: ConsoleModel }) {
           />
           <p>Reopen an exported session JSON. The file stays on your device.</p>
         </div>
+        {replay && !imported && (
+          <div className="recording-actions">
+            <button
+              className="button secondary"
+              disabled={!!busy}
+              onClick={() => m.exportEvidence(replay.run.id)}
+            >
+              <Download size={15} /> Export verifiable evidence
+            </button>
+            <p>Download the original event ledger for independent verification and optional detached signing.</p>
+          </div>
+        )}
         <div className="run-library-heading">
           <Database size={15} />
           {runs.length} {edition === 'browser' ? 'RECENT' : 'LOCAL'} RUNS
@@ -70,7 +83,8 @@ export default function Forensics({ m }: { m: ConsoleModel }) {
         {edition === 'browser' && (
           <p className="run-library-note">
             The {RETAINED_RUNS} most recent runs stay in this tab until it closes or reloads.
-            Download a session to keep it.
+            The browser keeps its most recent sessions locally in IndexedDB when available.
+            Browser storage can be cleared or evicted. Download an evidence bundle to keep a permanent copy.
           </p>
         )}
         {(busy === 'replay' || busy === 'import') && (

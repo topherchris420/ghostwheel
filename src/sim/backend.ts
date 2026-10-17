@@ -17,6 +17,7 @@ import { PythonRandom } from './random';
 import { Recorder, IntegrityError, RunNotFoundError } from './recorder';
 import { SCENARIOS, exerciseScenario, runExperiments } from './experiments';
 import { RETAINED_RUNS } from './limits';
+import { loadRunArchive, saveRunArchive } from './storage';
 
 const MAX_RECORDED_TICKS = 8000;
 const CARLA_REASON =
@@ -126,6 +127,37 @@ export class BrowserBackend {
   private timer: ReturnType<typeof setTimeout> | undefined;
   private nextTick = 0;
   private experimentRunning = false;
+  private archiveTimer: ReturnType<typeof setInterval> | undefined;
+  private archiveBusy = false;
+  private storageError: string | null = null;
+
+  /** The application loads valid archived runs before starting a fresh simulation. */
+  static async initialize(): Promise<BrowserBackend> {
+    const backend = new BrowserBackend();
+    try {
+      const restored = new Recorder(RETAINED_RUNS);
+      await restored.restoreArchive(await loadRunArchive(), cooperative());
+      backend.recorder = restored;
+      backend.recorder.begin(backend.world);
+    } catch (error) {
+      backend.storageError = error instanceof Error ? error.message : 'Could not restore local sessions';
+    }
+    backend.start();
+    return backend;
+  }
+
+  private async persistArchive() {
+    if (this.archiveBusy) return;
+    this.archiveBusy = true;
+    try {
+      await saveRunArchive(this.recorder.archive());
+      this.storageError = null;
+    } catch (error) {
+      this.storageError = error instanceof Error ? error.message : 'Browser storage failed';
+    } finally {
+      this.archiveBusy = false;
+    }
+  }
 
   constructor() {
     this.recorder.begin(this.world);
@@ -170,6 +202,7 @@ export class BrowserBackend {
 
   start() {
     if (this.timer !== undefined) return;
+    this.archiveTimer = setInterval(() => void this.persistArchive(), 4000);
     this.nextTick = performance.now();
     const loop = () => {
       this.nextTick += DT * 1000;
@@ -187,7 +220,10 @@ export class BrowserBackend {
 
   stop() {
     clearTimeout(this.timer);
+    clearInterval(this.archiveTimer);
     this.timer = undefined;
+    this.archiveTimer = undefined;
+    void this.persistArchive();
   }
 
   private latchAdapterFailure() {
@@ -279,9 +315,11 @@ export class BrowserBackend {
       case '/api/state':
         return this.snapshot();
       case '/api/runs':
-        return { runs: this.recorder.runs() };
+        return { runs: this.recorder.runs(), storage_error: this.storageError };
       case '/api/replay':
         return this.recorder.replay(query.get('id') || '', cooperative());
+      case '/api/evidence':
+        return this.recorder.evidence(query.get('id') || '', cooperative());
       case '/api/connectors':
         return {
           connectors: CONNECTORS,

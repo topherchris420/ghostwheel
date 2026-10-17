@@ -27,9 +27,7 @@ let browserLoading: Promise<BrowserBackend> | undefined;
 function browserBackend() {
   browserLoading ??= import('./sim/backend').then(
     ({ BrowserBackend }) => {
-      browser = new BrowserBackend();
-      browser.start();
-      return browser;
+      return BrowserBackend.initialize().then((ready) => { browser = ready; return ready; });
     },
     (error: unknown) => {
       browserLoading = undefined; // let the next connection attempt retry the download

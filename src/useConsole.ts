@@ -382,8 +382,9 @@ export function useConsole() {
       setNotice('Deterministic simulation reset. Seed ' + seed + '.');
     });
   const getRuns = useCallback(async () => {
-    const value = await request<{ runs: Run[] }>('/api/runs');
+    const value = await request<{ runs: Run[]; storage_error?: string | null }>('/api/runs');
     setRuns(value.runs);
+    if (value.storage_error) setError('Browser archive could not be saved: ' + value.storage_error + '. Export important sessions.');
   }, []);
   useEffect(() => {
     if (tab === 'forensics' && connected) void getRuns().catch((e) => setError(String(e)));
@@ -454,6 +455,14 @@ export function useConsole() {
       );
       setExportedRun(live.run_id);
       setNotice('Download requested. Keep this JSON file; open it later in Forensic replay.');
+    });
+  const exportEvidence = (runId: string) =>
+    void action('evidence', async () => {
+      saveJson(
+        await request<unknown>('/api/evidence?id=' + encodeURIComponent(runId)),
+        'ghostwheel-evidence-' + runId + '.json',
+      );
+      setNotice('Full evidence ledger downloaded. Verify offline; use an external signature to establish provenance.');
     });
   const executeScenario = () =>
     void action('scenario', async () => {
@@ -575,6 +584,7 @@ export function useConsole() {
     importReplay,
     exitReplay,
     exportRun,
+    exportEvidence,
     executeScenario,
     runExperiments,
     togglePause,

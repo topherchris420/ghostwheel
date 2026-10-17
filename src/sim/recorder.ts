@@ -156,6 +156,52 @@ export class Recorder {
       }));
   }
 
+  /** Retained browser ledgers are stored locally in IndexedDB, not on a server. */
+  archive(): unknown[] {
+    return structuredClone([...this.store.values()]);
+  }
+
+  /** Restore only valid bounded ledgers. Never trust local IndexedDB data implicitly. */
+  async restoreArchive(value: unknown, pause?: Yielder) {
+    if (!Array.isArray(value)) return;
+    for (const raw of value.slice(-this.retain)) {
+      if (
+        !isRecord(raw) ||
+        typeof raw.id !== 'string' ||
+        typeof raw.created_at !== 'string' ||
+        !['aster', 'vector', 'nomad'].includes(String(raw.architecture_id)) ||
+        !Number.isInteger(raw.seed) ||
+        !Number.isInteger(raw.ticks) ||
+        raw.ticks < 0 ||
+        raw.ticks > 8000 ||
+        !Number.isInteger(raw.event_count) ||
+        !Array.isArray(raw.events) ||
+        raw.events.length !== raw.event_count ||
+        raw.events.length > 50000 ||
+        typeof raw.metadata_json !== 'string' ||
+        typeof raw.summary_json !== 'string' ||
+        typeof raw.head_sha256 !== 'string'
+      ) continue;
+      const candidate = raw as unknown as StoredRun;
+      this.store.set(candidate.id, candidate);
+      try {
+        await this.replay(candidate.id, pause);
+      } catch {
+        // An altered or interrupted local archive must never show as verified.
+        this.store.delete(candidate.id);
+      }
+    }
+  }
+
+  /** Full ledger export; unlike snapshot JSON, this can be independently checked. */
+  async evidence(runId: string, pause?: Yielder) {
+    await this.replay(runId, pause);
+    const stored = this.store.get(runId);
+    if (!stored) throw new RunNotFoundError('run_not_found');
+    const { events, ...run } = stored;
+    return { format: 'ghostwheel-evidence-v1', run: { ...run }, events: structuredClone(events) };
+  }
+
   /** Verify and recompute a run. ``pause`` lets a long verification yield to the page. */
   async replay(runId: string, pause?: Yielder) {
     const stored = this.store.get(runId);

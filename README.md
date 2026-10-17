@@ -85,6 +85,8 @@ Once installed:
 
 **Reopening evidence:** Exported session JSON files up to 64 MB can be opened in Forensic replay, entirely on your device. Imported files are validated for viewing and labeled **not verified here**: they contain snapshots, not the original event ledger, so an embedded verification flag is never treated as proof. Locally recorded sessions continue to receive hash-chain verification and, for the built-in model, physics recomputation. Experiment reports are a different JSON format and are not replay files.
 
+**Independently checkable evidence:** In **Forensic replay**, select a locally recorded run and choose **Export verifiable evidence**. This downloads the original event ledger, not only view-only snapshots. Verify using `python scripts/verify-evidence.py evidence.json`, optionally supplying a separately published head hash or externally managed Ed25519 signature. See [evidence verification](docs/evidence-verification.md). Browser sessions are retained in on-device IndexedDB where supported; export important records before the browser clears its storage.
+
 **A quick glossary:** *Arm* enables controls for the selected simulation. *Gateway* validates a command before virtual actuation. *Safe Stop* disarms controls and requests braking. *Replay* examines a saved run without sending commands.
 
 ## Under the hood
@@ -166,7 +168,7 @@ GHOSTWHEEL runs without CARLA. If you already use the [CARLA simulator](https://
 
 The connector requires a matching client/server, an empty simulation world, and exclusive tick ownership. Disconnect it explicitly before closing the app so the adapter can destroy its owned actor and restore simulator settings. An abrupt shutdown may leave external CARLA state behind.
 
-**Validation status:** CARLA SDK import and adapter contract tests are documented, but a full driving run against a live CARLA server was **not validated** in the recorded build. The built-in demonstration and its results do not depend on CARLA.
+**Validation status:** CARLA SDK import and adapter contract tests are documented, but a full driving run against a live CARLA server was **not validated** in the recorded build. On an authorized host with a dedicated empty CARLA 0.9.16 server, run `PYTHONPATH=backend python scripts/carla-live-smoke.py --confirm-simulator` to test a bounded throttle/brake sequence and save a local receipt. This explicit opt-in is not part of ordinary CI. The built-in demonstration and its results do not depend on CARLA.
 
 ## What the evidence does and does not say
 

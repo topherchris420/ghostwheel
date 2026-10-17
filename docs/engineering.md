@@ -133,3 +133,16 @@ Full CARLA physics, hardware fixtures, production EV interfaces, wire-level CAN 
 A standalone C++17 ROS 2 package now lives at `ros2/ghostwheel_vehicle_interface/` with a synthetic Autoware HAL and passive CAN, OBD serial, and custom serial monitors. This does **not** change `backend/ghostwheel/connectors.py`, whose registry continues to reject physical actuation transports. The UI's System protocol page exposes setup instructions for the two distinct workflows.
 
 The ROS simulation node subscribes to Autoware actuation commands and publishes synthetic actuation/velocity reports, a heartbeat, and state/fault diagnostics. Default timeout is 100 ms of monotonic time and applies a **virtual** brake. Physical observation modes do not transmit actuation commands or publish invented actuator/speed measurements; they currently count received frames/bytes without OEM signal decoding. No browser-to-ROS physical control path exists. ROS shutdown is not a hardware safety guarantee.
+
+## PACMod3 read-only observer
+
+An optional ROS 2 `ghostwheel_pacmod3_adapter` executable subscribes to
+PACMod3 global, subsystem, speed, yaw and emergency-stop report topics and
+observes Autoware Control messages without forwarding them to hardware. It
+publishes a conservatively inferred Autoware ControlModeReport, fault and
+advisory software stop-request topics. The pure C++ observer state machine
+can be tested without ROS. PACMod3 feedback is published to Autoware only
+after explicit platform-specific conversion settings are configured.
+The driver owns the physical CAN connection and safety control.
+This observer makes no claims of physical emergency stop, drive-by-wire
+engagement authority or hardware functional safety certification.

@@ -34,7 +34,7 @@ export default function InterfaceWorkflows() {
         <div className={view === 'monitor' ? 'active' : ''}>
           <span className="profile-index">PASSIVE</span>
           <h3>Physical vehicle diagnostics</h3>
-          <p>Observe authorized CAN or serial data using a separate local ROS 2 process.</p>
+          <p>Observe authorized CAN or serial data, including PACMod3 status, from a local ROS 2 process.</p>
           <button
             type="button"
             className="button secondary"
@@ -68,8 +68,9 @@ export default function InterfaceWorkflows() {
               parameters <code>--ros-args -p interface_type:=can -p can_device:=can0</code>.
             </p>
             <p>
-              This web interface does not connect to that ROS process. CAN and serial modes are
-              receive-only, and never transmit physical actuator commands.
+              For PACMod3 feedback, install pacmod3_msgs and run{' '}
+              <code>ros2 run ghostwheel_vehicle_interface ghostwheel_pacmod3_adapter</code>.
+              This browser does not connect to ROS. Physical actuation remains disabled.
             </p>
             <p>
               <a

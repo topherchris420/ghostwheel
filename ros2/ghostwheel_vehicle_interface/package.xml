@@ -10,5 +10,7 @@
   <depend>std_msgs</depend>
   <depend>autoware_vehicle_msgs</depend>
   <depend>autoware_control_msgs</depend>
+  <depend>std_srvs</depend>
+  <exec_depend>pacmod3_msgs</exec_depend>
   <export><build_type>ament_cmake</build_type></export>
 </package>

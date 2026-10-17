@@ -2,6 +2,20 @@
 
 A functional Windows automotive cybersecurity research console. All driving actuation is confined to original virtual vehicles or an explicitly connected local CARLA simulator. RESTRICTED is a visual classification aesthetic, not an official classification.
 
+## First launch: no technical background needed
+
+GHOSTWHEEL is a **Windows simulation app** for students, instructors, and curious drivers. Its cars are invented virtual models, not production vehicles. The steering wheel and pedals never connect to an actual car.
+
+1. Install and open the Windows application. If you're building from source, follow the developer commands below.
+2. The **Quick start** guide appears on first launch. Open it again from the header any time.
+3. Choose a virtual car in **Operations**. Arm the **simulation controls**, then use the sliders or **W/A/S/D**. Press **Space** for Safe Stop.
+4. Use **Research lab** for reproducible synthetic security tests. Use **Forensic replay** to inspect recorded state without sending commands.
+5. Export the experiment report or recorded session as JSON when you want to share results.
+
+**Connection help:** The installed Windows app starts a private local backend. If you see **SIMULATION OFFLINE**, click **Reconnect** or **Retry** in the guide. In source development, check that the Python server is running at `127.0.0.1:8765`. CARLA is optional, and no vehicle, CAN adapter, or OBD device is needed.
+
+**Plain-English glossary:** *Arm* enables controls for the selected virtual car. *Gateway* checks synthetic commands before applying them. *Safe Stop* disarms the controls and stops the virtual car. *Replay* reads saved state and never drives anything.
+
 ## Run the demonstration
 
 Install the setup executable in `output/release/`, then launch GHOSTWHEEL from the Start menu. The app bundles its Python service, React interface and SQLite recording. The desktop launcher chooses an ephemeral loopback port and a fresh secret; Python need not be installed on the presentation machine. Microsoft WebView2 is required; the installer can install its bootstrapper when missing. See [build notes](src-tauri/PACKAGING.md) for the exact build and validation status.

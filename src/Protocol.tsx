@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   ArrowUpRight,
   Cable,
@@ -14,6 +15,7 @@ import { fmt, SectionTitle } from './components';
 import type { ConsoleModel } from './useConsole';
 export default function Protocol({ m }: { m: ConsoleModel }) {
   const { snapshot, boot, carla, connected, busy, replay } = m;
+  const [interfaceView, setInterfaceView] = useState<'simulation' | 'monitor'>('simulation');
   return (
     <div className="protocol-layout">
       <section className="panel protocol-hero">
@@ -32,6 +34,61 @@ export default function Protocol({ m }: { m: ConsoleModel }) {
             ACTUATION: {snapshot?.safety.actuation || 'SIMULATOR_ONLY'}
           </span>
         </div>
+      </section>
+      <section className="panel connector-panel" aria-label="Vehicle interface workflows">
+        <SectionTitle number="00" title="Choose your interface workflow">
+          <span className="tag cyan-tag">SIM CONTROL + READ-ONLY HARDWARE OBSERVATION</span>
+        </SectionTitle>
+        <p>
+          Ghostwheel supports both workflows without routing browser controls to real vehicle actuators.
+          Choose a setup below to see the corresponding connection method.
+        </p>
+        <div className="profile-list connector-list">
+          <div className={interfaceView === 'simulation' ? 'active' : ''}>
+            <span className="profile-index">INTERACTIVE</span>
+            <h3>Simulation controls</h3>
+            <p>Drive ASTER, VECTOR, NOMAD, or a local CARLA simulated vehicle. Run trials and replay evidence.</p>
+            <button type="button" className="button secondary"
+              aria-pressed={interfaceView === 'simulation'}
+              onClick={() => setInterfaceView('simulation')}>
+              <Play size={13} /> {interfaceView === 'simulation' ? 'Showing simulator setup' : 'Show simulator setup'}
+            </button>
+          </div>
+          <div className={interfaceView === 'monitor' ? 'active' : ''}>
+            <span className="profile-index">PASSIVE</span>
+            <h3>Physical vehicle diagnostics</h3>
+            <p>On a local Linux workstation, observe authorized CAN or serial traffic using the separate ROS 2 monitor.</p>
+            <button type="button" className="button secondary"
+              aria-pressed={interfaceView === 'monitor'}
+              onClick={() => setInterfaceView('monitor')}>
+              <Radio size={13} /> {interfaceView === 'monitor' ? 'Showing monitor setup' : 'Show monitor setup'}
+            </button>
+          </div>
+        </div>
+        {interfaceView === 'simulation' ? (
+          <div className="protocol-fail">
+            <ShieldCheck size={15} />
+            <div>
+              <b>Simulator mode is available now</b>
+              <p>Use Operations for built-in models, or the CARLA bridge below.
+                The optional ROS 2 package accepts Autoware actuation into a separate synthetic HAL.</p>
+            </div>
+          </div>
+        ) : (
+          <div className="protocol-fail">
+            <LockKeyhole size={15} />
+            <div>
+              <b>Hardware observation requires the local ROS 2 package</b>
+              <p>Build <code>ros2/ghostwheel_vehicle_interface</code> in your Autoware workspace,
+                then run <code>ros2 run ghostwheel_vehicle_interface ghostwheel_vehicle_interface
+                --ros-args -p interface_type:=can -p can_device:=can0</code>.</p>
+              <p>This browser is not connected to the ROS process. No vehicle steering, throttle,
+                or braking commands are transmitted; OBD/serial modes are receive-only stubs.</p>
+              <p>See <a href="https://github.com/topherchris420/ghostwheel/tree/main/ros2/ghostwheel_vehicle_interface"
+                 target="_blank" rel="noreferrer">ROS 2 setup and requirements <ArrowUpRight size={12} /></a>.</p>
+            </div>
+          </div>
+        )}
       </section>
       <div className="protocol-grid">
         <section className="panel">
@@ -102,7 +159,7 @@ export default function Protocol({ m }: { m: ConsoleModel }) {
         </section>
       </div>
       <section className="panel connector-panel">
-        <SectionTitle number="03" title="Actuation connectors">
+        <SectionTitle number="03" title="Simulator actuation connectors">
           <span className="tag cyan-tag">TRANSPORT POLICY: SIMULATION ONLY</span>
         </SectionTitle>
         <div className="profile-list connector-list">
@@ -142,9 +199,8 @@ export default function Protocol({ m }: { m: ConsoleModel }) {
           <div>
             <b>No physical actuation transport exists</b>
             <p>
-              The connector registry refuses every transport other than simulation. CAN, OBD, serial
-              and remote-device connectors cannot be registered, listed or reached through this
-              console.
+              The browser and Python actuator registry remain simulation-only. The standalone ROS 2
+              process supports passive CAN and serial monitoring, never physical actuation.
             </p>
           </div>
         </div>

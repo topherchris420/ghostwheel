@@ -126,3 +126,10 @@ The final verification receipt names the tested backend/test source hashes and h
 The desktop process-tree cleanup does not guarantee external CARLA actor/settings cleanup after abrupt exit. Explicitly disconnect before closing; reset the external simulator if a crash leaves an actor. This is a design limitation awaiting running-server lifecycle validation.
 
 Full CARLA physics, hardware fixtures, production EV interfaces, wire-level CAN behavior, formal verification, penetration testing of OVMS/CARLA and automotive certification are outside the validated scope. The report distinguishes these unknowns from passing local-model experiments.
+
+
+## Optional ROS 2 connector and hardware monitoring (GW-01)
+
+A standalone C++17 ROS 2 package now lives at `ros2/ghostwheel_vehicle_interface/` with a synthetic Autoware HAL and passive CAN, OBD serial, and custom serial monitors. This does **not** change `backend/ghostwheel/connectors.py`, whose registry continues to reject physical actuation transports. The UI's System protocol page exposes setup instructions for the two distinct workflows.
+
+The ROS simulation node subscribes to Autoware actuation commands and publishes synthetic actuation/velocity reports, a heartbeat, and state/fault diagnostics. Default timeout is 100 ms of monotonic time and applies a **virtual** brake. Physical observation modes do not transmit actuation commands or publish invented actuator/speed measurements; they currently count received frames/bytes without OEM signal decoding. No browser-to-ROS physical control path exists. ROS shutdown is not a hardware safety guarantee.

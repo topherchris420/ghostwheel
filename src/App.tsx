@@ -173,7 +173,7 @@ export default function App() {
             </button>
           ))}
           <div className="tabbar-end">
-            <LockKeyhole size={12} /> SIMULATOR ONLY
+            <LockKeyhole size={12} /> SIM ACTUATION / HW READ-ONLY
           </div>
         </nav>
         <main id="main-content" tabIndex={-1}>

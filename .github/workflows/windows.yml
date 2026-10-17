@@ -27,6 +27,8 @@ jobs:
           rustup default stable-x86_64-pc-windows-msvc
       - run: npm ci
       - run: npm run format:check
+      - name: Verify browser simulator against the Python backend
+        run: npm run verify:browser
       - run: python -m pip install -r scripts/build-requirements.txt
       - name: Verify backend
         shell: pwsh

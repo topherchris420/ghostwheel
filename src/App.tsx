@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Suspense, lazy, useState } from 'react';
 import {
   ArrowDownToLine,
   ArrowUpRight,
@@ -7,6 +7,7 @@ import {
   Database,
   FlaskConical,
   HelpCircle,
+  Info,
   LockKeyhole,
   RefreshCw,
   RotateCcw,
@@ -14,7 +15,9 @@ import {
   ShieldCheck,
   X,
 } from 'lucide-react';
+import { EDITION_NAME, edition } from './api';
 import { IconMark } from './components';
+import { describeError } from './messages';
 import { useConsole } from './useConsole';
 import type { Tab } from './useConsole';
 import Operations from './Operations';
@@ -22,6 +25,8 @@ import Research from './Research';
 import Forensics from './Forensics';
 import Protocol from './Protocol';
 import Welcome from './Welcome';
+// Loaded on demand: it carries the full license texts.
+const About = lazy(() => import('./About'));
 export default function App() {
   const m = useConsole();
   const [showWelcome, setShowWelcome] = useState(() => {
@@ -39,7 +44,14 @@ export default function App() {
       // The guide remains available from the header when storage is unavailable.
     }
   };
+  const [showAbout, setShowAbout] = useState(false);
+  const openOverlay = (open: () => void) => {
+    // Dialogs take keyboard focus, so stop the virtual vehicle first.
+    if (m.armed) void m.safeStop();
+    open();
+  };
   const { tab, snapshot, connected, streaming, busy, replay, error, notice } = m;
+  const problem = error ? describeError(error, edition) : null;
   const navItems: { id: Tab; label: string; icon: typeof ScanLine; code: string }[] = [
     { id: 'operations', label: 'Operations', icon: ScanLine, code: '01' },
     { id: 'research', label: 'Research lab', icon: FlaskConical, code: '02' },
@@ -58,6 +70,11 @@ export default function App() {
           }}
           onReconnect={() => void m.connect()}
         />
+      )}
+      {showAbout && (
+        <Suspense fallback={null}>
+          <About onClose={() => setShowAbout(false)} />
+        </Suspense>
       )}
       <aside className="rail">
         <a
@@ -95,24 +112,33 @@ export default function App() {
           <div className="wordmark">
             GHOSTWHEEL<span className="wordmark-divider">/</span>
             <b>GW-01</b>
-            <span className="restriction">RESTRICTED</span>
+            <span className="edition-badge">{EDITION_NAME[edition].toUpperCase()}</span>
           </div>
           <div className="topbar-right">
             <button
               type="button"
               className="guide-trigger"
-              onClick={() => {
-                if (m.armed) void m.safeStop();
-                setShowWelcome(true);
-              }}
+              onClick={() => openOverlay(() => setShowWelcome(true))}
               aria-label="Open quick start guide"
             >
               <HelpCircle size={15} /> Quick start
             </button>
+            <button
+              type="button"
+              className="guide-trigger"
+              onClick={() => openOverlay(() => setShowAbout(true))}
+              aria-label="About GHOSTWHEEL, privacy and licenses"
+            >
+              <Info size={15} /> About
+            </button>
             <span className="environment-chip">
               <span className={connected ? 'dot cyan' : 'dot red'} />
-              {connected ? 'SIMULATION LINK ACTIVE' : 'SIMULATION OFFLINE'}
-              {connected && (
+              {!connected
+                ? 'SIMULATION OFFLINE'
+                : edition === 'browser'
+                  ? 'SIMULATOR RUNNING IN BROWSER'
+                  : 'SIMULATION LINK ACTIVE'}
+              {connected && edition !== 'browser' && (
                 <span
                   className="link-transport"
                   title={
@@ -215,18 +241,14 @@ export default function App() {
               )}
             </div>
           </div>
-          {error && (
+          {problem && (
             <div className="message error" role="alert">
               <CircleAlert size={16} />
               <div>
-                <b>
-                  {connected ? 'Operation could not complete' : 'Simulator connection unavailable'}
-                </b>
+                <b>{connected ? 'That did not work' : 'Simulator not connected'}</b>
                 <span>
-                  {error}
-                  {!connected
-                    ? ' · Start the local backend or launch the desktop application.'
-                    : ''}
+                  {problem.text}
+                  {problem.code && <code className="message-code">{problem.code}</code>}
                 </span>
               </div>
               {!connected && (
@@ -279,15 +301,19 @@ export default function App() {
           {tab === 'forensics' && <Forensics m={m} />} {tab === 'protocol' && <Protocol m={m} />}
           <footer>
             <span>
-              <span className="dot cyan" /> GHOSTWHEEL RESEARCH PLATFORM <b>v0.1.0</b>
+              <span className="dot cyan" /> GHOSTWHEEL RESEARCH PLATFORM <b>v{__APP_VERSION__}</b>
             </span>
             <span>
               LOCAL EXECUTION <span className="footer-slash">/</span> SYNTHETIC CAN{' '}
               <span className="footer-slash">/</span> NO PRODUCTION ACTUATION
             </span>
-            <span>
-              GW-01 <LockKeyhole size={11} />
-            </span>
+            <button
+              type="button"
+              className="footer-link"
+              onClick={() => openOverlay(() => setShowAbout(true))}
+            >
+              About, privacy &amp; licenses <LockKeyhole size={11} />
+            </button>
           </footer>
         </main>
       </div>

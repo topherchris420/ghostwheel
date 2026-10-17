@@ -23,6 +23,7 @@ import {
   SteeringWheel,
   TestField,
 } from './components';
+import { describeReason } from './messages';
 import type { ConsoleModel } from './useConsole';
 export default function Operations({ m }: { m: ConsoleModel }) {
   const {
@@ -474,7 +475,12 @@ export default function Operations({ m }: { m: ConsoleModel }) {
                 <b className={event.accepted ? 'cyan-text' : 'amber-text'}>
                   {event.kind.toUpperCase().replaceAll('_', ' ')}
                 </b>
-                <span>{event.reason}</span>
+                <span title={describeReason(event.reason)}>
+                  {event.reason}
+                  {describeReason(event.reason) && (
+                    <i className="event-reason"> · {describeReason(event.reason)}</i>
+                  )}
+                </span>
                 <span className="event-result">{event.accepted ? 'ACCEPTED' : 'REJECTED'}</span>
               </div>
             ))}

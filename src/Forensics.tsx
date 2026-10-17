@@ -7,7 +7,9 @@
   RotateCcw,
   ShieldCheck,
 } from 'lucide-react';
+import { edition } from './api';
 import { SectionTitle, TestField } from './components';
+import { RETAINED_RUNS } from './sim/limits';
 import type { ConsoleModel } from './useConsole';
 export default function Forensics({ m }: { m: ConsoleModel }) {
   const { runs, replay, busy, snapshot, connected, playing, replayIndex } = m;
@@ -25,8 +27,23 @@ export default function Forensics({ m }: { m: ConsoleModel }) {
         </SectionTitle>
         <div className="run-library-heading">
           <Database size={15} />
-          {runs.length} LOCAL RUNS <span>SQLite evidence store</span>
+          {runs.length} {edition === 'browser' ? 'RECENT' : 'LOCAL'} RUNS{' '}
+          <span>
+            {edition === 'browser' ? 'In-memory evidence store' : 'SQLite evidence store'}
+          </span>
         </div>
+        {edition === 'browser' && (
+          <p className="run-library-note">
+            This tab keeps the {RETAINED_RUNS} most recent runs until you close it. Export a session
+            to keep it.
+          </p>
+        )}
+        {busy === 'replay' && (
+          <div className="run-library-progress" role="status">
+            <RefreshCw className="spin" size={13} /> Verifying the recording’s hash chain and
+            recomputing its physics…
+          </div>
+        )}
         {runs.length ? (
           runs.map((run) => (
             <button

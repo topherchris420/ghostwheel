@@ -9,6 +9,7 @@ import {
   WifiOff,
   X,
 } from 'lucide-react';
+import { edition } from './api';
 import type { Tab } from './useConsole';
 
 type WelcomeProps = {
@@ -53,7 +54,10 @@ export default function Welcome({ connected, onClose, onNavigate, onReconnect }:
         <h2 id="welcome-title">Take the virtual driver's seat.</h2>
         <p id="welcome-description" className="welcome-description">
           Explore how fictional electric vehicles respond to steering commands, safety checks, and
-          simulated faults. No programming or hardware is needed in the installed desktop app.
+          simulated faults.{' '}
+          {edition === 'browser'
+            ? 'Everything runs right here in your browser: nothing to install, and no programming or hardware needed.'
+            : 'No programming or hardware is needed.'}
         </p>
         <div className="welcome-boundary">
           <ShieldCheck size={21} />
@@ -101,12 +105,21 @@ export default function Welcome({ connected, onClose, onNavigate, onReconnect }:
         <div className="welcome-connection" role="status">
           {connected ? (
             <>
-              <span className="dot cyan" /> Local simulator connected and ready
+              <span className="dot cyan" />{' '}
+              {edition === 'browser'
+                ? 'Simulator running in your browser and ready'
+                : 'Local simulator connected and ready'}
             </>
           ) : (
             <>
               <WifiOff size={15} />
-              <span>Local simulator not connected. The installed app starts it automatically.</span>
+              <span>
+                {edition === 'browser'
+                  ? 'Starting the in-browser simulator…'
+                  : edition === 'desktop'
+                    ? 'Local simulator not connected. The app starts it automatically.'
+                    : 'Local simulator not connected. Start the Python backend on 127.0.0.1:8765.'}
+              </span>
               <button type="button" onClick={onReconnect}>
                 Retry
               </button>

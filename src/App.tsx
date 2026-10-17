@@ -101,7 +101,10 @@ export default function App() {
             <button
               type="button"
               className="guide-trigger"
-              onClick={() => setShowWelcome(true)}
+              onClick={() => {
+                if (m.armed) void m.safeStop();
+                setShowWelcome(true);
+              }
               aria-label="Open quick start guide"
             >
               <HelpCircle size={15} /> Quick start

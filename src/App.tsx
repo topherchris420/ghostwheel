@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   ArrowDownToLine,
   ArrowUpRight,
@@ -5,6 +6,7 @@ import {
   CircleAlert,
   Database,
   FlaskConical,
+  HelpCircle,
   LockKeyhole,
   RefreshCw,
   RotateCcw,
@@ -19,8 +21,24 @@ import Operations from './Operations';
 import Research from './Research';
 import Forensics from './Forensics';
 import Protocol from './Protocol';
+import Welcome from './Welcome';
 export default function App() {
   const m = useConsole();
+  const [showWelcome, setShowWelcome] = useState(() => {
+    try {
+      return window.localStorage.getItem('ghostwheel.quickstart.v1') !== 'completed';
+    } catch {
+      return true;
+    }
+  });
+  const dismissWelcome = () => {
+    setShowWelcome(false);
+    try {
+      window.localStorage.setItem('ghostwheel.quickstart.v1', 'completed');
+    } catch {
+      // The guide remains available from the header when storage is unavailable.
+    }
+  };
   const { tab, snapshot, connected, streaming, busy, replay, error, notice } = m;
   const navItems: { id: Tab; label: string; icon: typeof ScanLine; code: string }[] = [
     { id: 'operations', label: 'Operations', icon: ScanLine, code: '01' },
@@ -30,6 +48,17 @@ export default function App() {
   ];
   return (
     <div className="app-shell">
+      {showWelcome && (
+        <Welcome
+          connected={connected}
+          onClose={dismissWelcome}
+          onNavigate={(nextTab) => {
+            m.setTab(nextTab);
+            dismissWelcome();
+          }}
+          onReconnect={() => void m.connect()}
+        />
+      )}
       <aside className="rail">
         <a
           className="brand-symbol"
@@ -69,6 +98,17 @@ export default function App() {
             <span className="restriction">RESTRICTED</span>
           </div>
           <div className="topbar-right">
+            <button
+              type="button"
+              className="guide-trigger"
+              onClick={() => {
+                if (m.armed) void m.safeStop();
+                setShowWelcome(true);
+              }}
+              aria-label="Open quick start guide"
+            >
+              <HelpCircle size={15} /> Quick start
+            </button>
             <span className="environment-chip">
               <span className={connected ? 'dot cyan' : 'dot red'} />
               {connected ? 'SIMULATION LINK ACTIVE' : 'SIMULATION OFFLINE'}
@@ -129,7 +169,7 @@ export default function App() {
               </h1>
               <p>
                 {tab === 'operations'
-                  ? 'A closed-loop environment for automotive security research.'
+                  ? 'Drive fictional electric vehicles, test their safeguards, and replay results. No real car is connected.'
                   : tab === 'research'
                     ? 'Reproducible tests. Measured response. Evidence from simulation.'
                     : tab === 'forensics'
@@ -176,7 +216,7 @@ export default function App() {
             </div>
           </div>
           {error && (
-            <div className="message error">
+            <div className="message error" role="alert">
               <CircleAlert size={16} />
               <div>
                 <b>
@@ -204,7 +244,7 @@ export default function App() {
             </div>
           )}
           {notice && (
-            <div className="notice">
+            <div className="notice" role="status" aria-live="polite">
               <Check size={14} />
               {notice}
               <button aria-label="Dismiss notification" onClick={() => m.setNotice('')}>

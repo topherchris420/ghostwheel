@@ -38,8 +38,11 @@ export function useConsole() {
   const sequence = useRef(0),
     lastControlTick = useRef(0),
     pollBusy = useRef(false),
-    streamingRef = useRef(false);
+    streamingRef = useRef(false),
+    connectedRef = useRef(connected),
+    connectingRef = useRef(false);
   liveRef.current = live;
+  connectedRef.current = connected;
   bootRef.current = boot;
   controlsRef.current = { steer, throttle, brake };
   const snapshot = replay?.frames[replayIndex] || live,
@@ -55,28 +58,35 @@ export function useConsole() {
     if (value.snapshot) setLive(value.snapshot);
   };
   const connect = useCallback(async () => {
+    if (connectingRef.current) return;
+    connectingRef.current = true;
     try {
       await discoverBackend();
       const value = await bootstrap();
       adoptBootstrap(value);
       setLive(await request<Snapshot>('/api/state'));
+      connectedRef.current = true;
       setConnected(true);
       setError('');
     } catch (e) {
+      connectedRef.current = false;
       setConnected(false);
       setArmed(false);
       setError(e instanceof Error ? e.message : 'Backend unavailable');
+    } finally {
+      connectingRef.current = false;
     }
   }, []);
   useEffect(() => {
     void connect();
     const retry = setInterval(() => {
-      if (!liveRef.current) void connect();
+      if (!connectedRef.current) void connect();
     }, 3500);
     return () => clearInterval(retry);
   }, [connect]);
   const ingest = useCallback((state: Snapshot) => {
     setLive(state);
+    connectedRef.current = true;
     setConnected(true);
     setHistory((points) => {
       const last = points.at(-1);
@@ -131,6 +141,7 @@ export function useConsole() {
       try {
         ingest(await request<Snapshot>('/api/state'));
       } catch (e) {
+        connectedRef.current = false;
         setConnected(false);
         setArmed(false);
         setError(e instanceof Error ? e.message : 'Backend connection lost');
@@ -206,6 +217,7 @@ export function useConsole() {
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       const target = e.target instanceof Element ? e.target : null;
+      if (document.querySelector('dialog[open]')) return;
       if (e.code === 'Space' && tab === 'operations' && !replay) {
         e.preventDefault();
         void safeStop();

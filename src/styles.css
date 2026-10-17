@@ -3405,3 +3405,208 @@ footer .dot {
   min-height: 28px;
   padding: 6px 10px;
 }
+
+/* First-run guide: accessible, modal and responsive without changing simulator controls. */
+.guide-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 7px 10px;
+  border: 1px solid #35515a;
+  border-radius: 5px;
+  background: #17242a;
+  color: #c5dedf;
+  white-space: nowrap;
+  font-size: 12px;
+}
+.guide-trigger:hover,
+.guide-trigger:focus-visible {
+  background: #213740;
+  border-color: var(--cyan);
+}
+.control-quicktip {
+  color: #b1c5ca;
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 5px 0 16px;
+}
+.welcome-dialog {
+  width: min(700px, calc(100vw - 32px));
+  max-height: min(90vh, 850px);
+  overflow-y: auto;
+  margin: auto;
+  padding: 0;
+  color: #dce7ea;
+  border: 1px solid #45616b;
+  border-radius: 12px;
+  background: #111b22;
+  box-shadow: 0 20px 90px rgba(0, 0, 0, 0.7);
+}
+.welcome-dialog::backdrop {
+  background: rgba(2, 8, 12, 0.84);
+  backdrop-filter: blur(5px);
+}
+.welcome-topline {
+  padding: 14px 23px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  border-bottom: 1px solid #30434d;
+  color: #a7bbc3;
+  font: 10px var(--mono);
+  letter-spacing: 1px;
+}
+.welcome-topline button {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 5px;
+  color: #c4d8db;
+}
+.welcome-topline button:hover {
+  background: #27353f;
+}
+.welcome-content {
+  padding: 28px clamp(18px, 5vw, 36px) 32px;
+}
+.welcome-kicker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--cyan);
+  font: 11px var(--mono);
+  letter-spacing: 1.3px;
+}
+.welcome-content h2 {
+  margin: 12px 0;
+  color: #f2f7f7;
+  font-size: clamp(28px, 5vw, 38px);
+  line-height: 1.14;
+  font-weight: 500;
+}
+.welcome-description {
+  max-width: 60ch;
+  color: #bacbd0;
+  font-size: 14px;
+  line-height: 1.65;
+}
+.welcome-boundary {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 22px 0;
+  padding: 15px;
+  background: #152e2b;
+  border: 1px solid #35645f;
+  border-radius: 7px;
+}
+.welcome-boundary svg {
+  color: var(--cyan);
+}
+.welcome-boundary strong,
+.welcome-steps strong {
+  color: #eff8f8;
+  font-size: 14px;
+}
+.welcome-boundary p,
+.welcome-steps p {
+  margin-top: 5px;
+  line-height: 1.55;
+  color: #b5c6cb;
+  font-size: 13px;
+}
+.welcome-steps {
+  list-style: none;
+  display: grid;
+  gap: 17px;
+  padding: 0;
+  margin: 0 0 22px;
+}
+.welcome-steps li {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+.welcome-step-number {
+  flex: 0 0 38px;
+  display: grid;
+  place-items: center;
+  height: 38px;
+  border: 1px solid #415461;
+  border-radius: 6px;
+  color: var(--amber);
+  font: 12px var(--mono);
+}
+.welcome-shortcut {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  color: #9eb5bc;
+  font-size: 12px;
+}
+.welcome-connection {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+  min-height: 42px;
+  padding: 10px 12px;
+  border-radius: 5px;
+  background: #1b2931;
+  color: #c2d6d7;
+  font-size: 12px;
+}
+.welcome-connection button {
+  margin-left: auto;
+  padding: 6px 12px;
+  color: #e8f7f6;
+  border: 1px solid #507a79;
+  border-radius: 4px;
+}
+.welcome-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 21px;
+}
+.welcome-actions .button {
+  min-height: 42px;
+}
+.welcome-footnote {
+  margin-top: 19px;
+  color: #9aaeb7;
+  font-size: 12px;
+}
+@media (max-width: 980px) {
+  .topbar-right .guide-trigger {
+    font-size: 0;
+    gap: 0;
+  }
+  .topbar-right .guide-trigger svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+@media (max-width: 540px) {
+  .welcome-content {
+    padding: 23px 18px;
+  }
+  .welcome-actions .button {
+    width: 100%;
+    justify-content: center;
+  }
+  .welcome-dialog {
+    max-height: 94vh;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .welcome-dialog::backdrop {
+    backdrop-filter: none;
+  }
+}

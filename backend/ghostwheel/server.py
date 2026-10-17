@@ -299,6 +299,9 @@ class Handler(BaseHTTPRequestHandler):
                 elif parsed.path == '/api/replay':
                     run_id = parse_qs(parsed.query).get('id', [''])[0]
                     self._json(200, self.app.recorder.replay(run_id))
+                elif parsed.path == '/api/evidence':
+                    run_id = parse_qs(parsed.query).get('id', [''])[0]
+                    self._json(200, self.app.recorder.evidence(run_id))
                 elif parsed.path == '/api/connectors':
                     self._json(200, {'connectors': connectors.list_connectors(),
                                      'active': self.app.world.connector_id,

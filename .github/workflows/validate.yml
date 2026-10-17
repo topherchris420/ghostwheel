@@ -1,0 +1,30 @@
+name: Validate simulator
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: npm ci
+      - run: npm run format:check
+      - run: npm run verify:browser
+      - run: npm run verify:workspace
+      - run: npm run build
+      - name: Backend and portable evidence tests
+        env:
+          PYTHONPATH: backend
+        run: python -m unittest discover -s tests -v

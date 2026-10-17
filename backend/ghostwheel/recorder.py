@@ -174,5 +174,25 @@ class Recorder:
                               'recomputed': supported, 'matched_frames': matched, 'matched_commands': command_matches,
                               'limitation': 'Local hash chaining detects accidental or partial edits; it is not an externally signed proof. Recordings made through a non-builtin connector (CARLA, SIL) support verified playback, not builtin-physics recomputation.'}}
 
+    def evidence(self, run_id):
+        """Full portable event ledger, with capability secrets already redacted."""
+        self.replay(run_id)
+        row = self.db.execute(
+            'SELECT created_at,kind,architecture_id,seed,metadata_json,ticks,summary_json,event_count,head_sha256 '
+            'FROM runs WHERE id=?', (run_id,)).fetchone()
+        if row is None:
+            raise KeyError('run_not_found')
+        fields = ('created_at', 'kind', 'architecture_id', 'seed', 'metadata_json',
+                  'ticks', 'summary_json', 'event_count', 'head_sha256')
+        run = {'id': run_id, **dict(zip(fields, row))}
+        events = [
+            {'ordinal': n, 'kind': kind, 'tick': tick, 'payload': json.loads(payload),
+             'previous_hash': parent, 'event_hash': digest}
+            for n, kind, tick, payload, parent, digest in self.db.execute(
+                'SELECT ordinal,kind,tick,payload_json,previous_hash,event_hash '
+                'FROM events WHERE run_id=? ORDER BY ordinal', (run_id,))
+        ]
+        return {'format': 'ghostwheel-evidence-v1', 'run': run, 'events': events}
+
     def close(self):
         self.db.close()

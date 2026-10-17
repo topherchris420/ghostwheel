@@ -107,7 +107,7 @@ export function useConsole() {
   const token = boot?.token;
   useEffect(() => {
     if (!token) return;
-    let socket: WebSocket | undefined,
+    let socket: { close: () => void } | undefined,
       retry: ReturnType<typeof setTimeout> | undefined,
       attempts = 0,
       disposed = false;

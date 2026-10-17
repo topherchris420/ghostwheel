@@ -168,7 +168,9 @@ export default function Protocol({ m }: { m: ConsoleModel }) {
         </span>
         <button
           className="button secondary"
-          disabled={!connected || !!busy || !!replay}
+          disabled={
+            !connected || !!busy || !!replay || (carla?.available === false && !carla.connected)
+          }
           onClick={m.toggleCarla}
         >
           {carla?.connected ? <LockKeyhole size={13} /> : <Play size={13} />}{' '}

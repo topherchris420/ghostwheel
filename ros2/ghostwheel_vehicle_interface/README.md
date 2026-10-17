@@ -37,6 +37,7 @@ When running in hardware-monitor mode, use an isolated, authorized diagnostic se
 - Publish `/vehicle/status/actuation_status` (`autoware_vehicle_msgs/msg/ActuationReportStamped`): **synthetic mode only**.
 - Publish `/vehicle/status/velocity_status` (`autoware_vehicle_msgs/msg/VelocityReport`): **synthetic mode only**.
 - Publish `/ghostwheel/interface/heartbeat` (`std_msgs/msg/UInt64`): ROS node tick counter, **not** vehicle ECU health.
+- Publish `/ghostwheel/interface/observations` (`std_msgs/msg/UInt64`): monotonic count of simulation samples, CAN frames or serial bytes consumed. Counts are not decoded signals.
 - Publish `/ghostwheel/interface/fault` (`std_msgs/msg/String`): latched latest mode / error state via transient-local QoS.
 
 A fresh, stamped synthetic command is required before simulation moves. If it stops arriving for more than `control_timeout_ms`, default 100 ms, the software applies 100% *synthetic* brake and zero throttle/steering demand. It does not apply any physical brake. ROS shutdown requests the same synthetic stop; abnormal process or OS failure cannot be covered by a software callback.
@@ -46,6 +47,7 @@ A fresh, stamped synthetic command is required before simulation moves. If it st
 ```bash
 ros2 topic echo /ghostwheel/interface/fault
 ros2 topic echo /ghostwheel/interface/heartbeat
+ros2 topic echo /ghostwheel/interface/observations
 ros2 topic echo /vehicle/status/velocity_status
 # Switch to passive CAN observation, with an authorized interface:
 ros2 run ghostwheel_vehicle_interface ghostwheel_vehicle_interface --ros-args \

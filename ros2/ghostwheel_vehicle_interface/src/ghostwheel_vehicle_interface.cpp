@@ -57,6 +57,8 @@ class GhostwheelVehicleInterface final : public rclcpp::Node {
       "/ghostwheel/interface/fault", fault_qos);
     heartbeat_pub_ = create_publisher<std_msgs::msg::UInt64>(
       "/ghostwheel/interface/heartbeat", rclcpp::QoS(10));
+    observations_pub_ = create_publisher<std_msgs::msg::UInt64>(
+      "/ghostwheel/interface/observations", rclcpp::QoS(10));
     actuation_pub_ = create_publisher<autoware_vehicle_msgs::msg::ActuationReportStamped>(
       "/vehicle/status/actuation_status", rclcpp::QoS(10));
     velocity_pub_ = create_publisher<autoware_vehicle_msgs::msg::VelocityReport>(
@@ -160,6 +162,9 @@ class GhostwheelVehicleInterface final : public rclcpp::Node {
     heartbeat_pub_->publish(heartbeat);
 
     const VehicleStatus status = hal_->read_status();
+    std_msgs::msg::UInt64 observations;
+    observations.data = hal_->observations();
+    observations_pub_->publish(observations);
     if (!status.valid) {
       // No made-up "actual" pedal or velocity status for real vehicles.
       return;
@@ -199,6 +204,7 @@ class GhostwheelVehicleInterface final : public rclcpp::Node {
       velocity_pub_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr fault_pub_;
   rclcpp::Publisher<std_msgs::msg::UInt64>::SharedPtr heartbeat_pub_;
+  rclcpp::Publisher<std_msgs::msg::UInt64>::SharedPtr observations_pub_;
   rclcpp::TimerBase::SharedPtr timer_;
 };
 }  // namespace ghostwheel

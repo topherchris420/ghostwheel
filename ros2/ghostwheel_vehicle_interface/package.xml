@@ -12,5 +12,7 @@
   <depend>autoware_control_msgs</depend>
   <depend>std_srvs</depend>
   <exec_depend>pacmod3_msgs</exec_depend>
+  <!-- Dataspeed adapter is conditionally built only with native vendor types.
+       Do not introduce local look-alike message types for live ROS topics. -->
   <export><build_type>ament_cmake</build_type></export>
 </package>

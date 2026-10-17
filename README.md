@@ -162,15 +162,19 @@ The desktop build creates a packaged application and an NSIS installer under `ou
 
 Full prerequisites, packaging behavior, smoke-test commands, and compatibility-build notes: [Windows packaging guide](src-tauri/PACKAGING.md).
 
-## Optional PACMod3 read-only integration
+## Optional DBW kit read-only integration
 
-The ROS 2 package now includes a **PacMod3 report observer**. With AutonomouStuff's
-`pacmod3_msgs` installed, it subscribes to actual PACMod3 status and fault
-reports, produces calibrated Autoware feedback when explicitly configured,
-and publishes advisory stop/fault signals. It never sends physical actuator
-commands or initiates drive-by-wire engagement.
+The ROS 2 package contains **receive-only observation adapters** for PACMod3
+and Dataspeed DBW, using a shared fault and engagement state model. Neither
+adapter transmits steering, throttle, braking, or DBW-enable commands.
 
-[Read the PACMod3 setup and topic contract](ros2/ghostwheel_vehicle_interface/README.md#pacmod3-observation-adapter-optional-read-only).
+- **PACMod3:** Builds when `pacmod3_msgs` is available. Subscribes to actual
+  PACMod3 reports and publishes gated Autoware status and advisory faults.
+  [PACMod3 setup](ros2/ghostwheel_vehicle_interface/README.md#pacmod3-observation-adapter-optional-read-only).
+- **Dataspeed DBW:** Builds **only when native `dataspeed_dbw_msgs` is
+  installed**. No locally generated message type can be substituted for
+  native vendor ROS topics; actual driver compatibility must be verified.
+  [Dataspeed setup](ros2/ghostwheel_vehicle_interface/README.md#dataspeed-dbw-observation-adapter-optional-read-only).
 
 ## ROS 2 interface: choose between two workflows
 

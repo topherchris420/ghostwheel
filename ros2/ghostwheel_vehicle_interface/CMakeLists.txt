@@ -44,6 +44,25 @@ else()
   message(STATUS "PACMod3 message package not found: ROS observer target disabled")
 endif()
 
+# Dataspeed (Option B): native ROS message types are mandatory for live
+# observation. Local look-alike IDL is NOT wire-compatible with a vendor
+# publisher, even if a C++ using-alias shares the same field names.
+# Keep the core simulator and PACMod observer buildable without Dataspeed.
+find_package(dataspeed_dbw_msgs QUIET)
+if(dataspeed_dbw_msgs_FOUND)
+  find_package(std_srvs REQUIRED)
+  add_executable(ghostwheel_dataspeed_adapter src/dataspeed_observer.cpp)
+  target_include_directories(ghostwheel_dataspeed_adapter PRIVATE include)
+  target_compile_options(ghostwheel_dataspeed_adapter PRIVATE -Wall -Wextra -Wpedantic)
+  ament_target_dependencies(ghostwheel_dataspeed_adapter
+    rclcpp std_msgs std_srvs dataspeed_dbw_msgs
+    autoware_vehicle_msgs autoware_control_msgs)
+  install(TARGETS ghostwheel_dataspeed_adapter
+    RUNTIME DESTINATION lib/${PROJECT_NAME})
+else()
+  message(STATUS "Native dataspeed_dbw_msgs not found: read-only Dataspeed observer target disabled")
+endif()
+
 install(TARGETS ghostwheel_hal ghostwheel_vehicle_interface
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
@@ -55,6 +74,13 @@ if(BUILD_TESTING)
   add_executable(ghostwheel_hal_contract_test tests/hal_contract_test.cpp)
   target_link_libraries(ghostwheel_hal_contract_test ghostwheel_hal)
   add_test(NAME ghostwheel_hal_contract_test COMMAND ghostwheel_hal_contract_test)
+  # Shared observer-state decision logic (used by both DBW adapters).
+  add_executable(ghostwheel_dbw_observer_state_test tests/dbw_observer_state_test.cpp)
+  target_include_directories(ghostwheel_dbw_observer_state_test PRIVATE include)
+  target_compile_options(ghostwheel_dbw_observer_state_test PRIVATE -Wall -Wextra -Wpedantic)
+  add_test(NAME ghostwheel_dbw_observer_state_test
+    COMMAND ghostwheel_dbw_observer_state_test)
+  # Backwards-compatible alias kept for the existing PACMod test contract.
   add_executable(ghostwheel_pacmod_observer_state_test tests/pacmod_observer_state_test.cpp)
   target_include_directories(ghostwheel_pacmod_observer_state_test PRIVATE include)
   add_test(NAME ghostwheel_pacmod_observer_state_test

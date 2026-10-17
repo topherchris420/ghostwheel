@@ -24,3 +24,24 @@ ghostwheel_pacmod3_adapter:
     dbw_steering_sign: 0                 # Set only after vehicle-specific validation
     dbw_pedal_report_scale: 0.0         # 0 means no actuation publication
     dbw_assume_zero_lateral_velocity: false
+
+# Separate ROS node: Dataspeed DBW observation adapter (Option B).
+# Set dbw_kit to "dataspeed" in this node's parameters; the PACMod3 adapter
+# above rejects it and vice versa, so a shared params file can carry both
+# sections and each node reads only its own.
+ghostwheel_dataspeed_adapter:
+  ros__parameters:
+    dbw_kit: "dataspeed"
+    dbw_enable_on_startup: false
+    dbw_fault_recovery_enabled: false  # Manual, conditional acknowledgement only
+    control_timeout_ms: 100
+    dbw_report_timeout_ms: 200
+    dbw_hardware_timeout_ms: 0  # Unknown until verified in the kit manual
+    dbw_max_steer_rate: 0.5
+    dbw_max_accel: 2.0
+    dbw_max_decel: 3.0
+    dbw_standstill_threshold_mps: 0.05
+    dbw_steering_wheel_to_tire_ratio: 0.0 # 0 means no steering publication
+    dbw_steering_sign: 0                 # Set only after vehicle-specific validation
+    dbw_pedal_report_scale: 0.0         # 0 means no actuation publication
+    dbw_assume_zero_lateral_velocity: false

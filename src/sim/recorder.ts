@@ -170,10 +170,13 @@ export class Recorder {
         typeof raw.id !== 'string' ||
         typeof raw.created_at !== 'string' ||
         !['aster', 'vector', 'nomad'].includes(String(raw.architecture_id)) ||
+        typeof raw.seed !== 'number' ||
         !Number.isInteger(raw.seed) ||
+        typeof raw.ticks !== 'number' ||
         !Number.isInteger(raw.ticks) ||
         raw.ticks < 0 ||
         raw.ticks > 8000 ||
+        typeof raw.event_count !== 'number' ||
         !Number.isInteger(raw.event_count) ||
         !Array.isArray(raw.events) ||
         raw.events.length !== raw.event_count ||

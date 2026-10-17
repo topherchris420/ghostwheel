@@ -1,0 +1,41 @@
+name: Bug report
+description: Report a reproducible simulation or interface defect
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: "For exploitable security vulnerabilities, follow SECURITY.md instead of filing a public issue. Do not attach tokens, VINs, or private recordings."
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, browser or Windows app, Node/Python versions when relevant
+      placeholder: Windows 11 / Chrome / Node 22
+    validations:
+      required: true
+  - type: input
+    id: scenario
+    attributes:
+      label: Vehicle, scenario, and seed
+      placeholder: ASTER, replay/duplicate, seed 42
+    validations:
+      required: false
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Include sanitized commands and exact steps
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed behavior and non-sensitive evidence
+    validations:
+      required: true

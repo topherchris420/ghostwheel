@@ -254,6 +254,36 @@ npm run desktop:build
 
 The NSIS installer and receipts are written under <code>output/release/</code>. Microsoft WebView2 is required. The installer is **unsigned**, not a certified automotive tool, and not committed to the repository. When available, build artifacts appear in the [Windows Actions workflow](.github/workflows/windows.yml). Read the [packaging guide](src-tauri/PACKAGING.md) for installer and native smoke-test details.
 
+## Release quality and responsible distribution
+
+GHOSTWHEEL is an experimental simulator. A Vercel preview or a successfully
+uploaded installer is **not** proof of reliability, release approval, or vehicle
+safety. Use [the release checklist](docs/release-checklist.md) before sharing a
+binary or changing repository visibility.
+
+The release process now includes an offline, fail-closed preflight:
+
+~~~sh
+python scripts/release_gate.py
+~~~
+
+It checks that npm/Tauri versions agree, required security and contribution
+policies exist, and the Windows installer remains a per-user NSIS package.
+The Windows release-candidate workflow additionally exercises the packaged
+backend, portable native UI, silent installer, installed UI, and final QA
+receipts. **Only after all these succeed** does it attempt to upload an
+unsigned candidate. Its final gate verifies portable ZIP contents,
+SHA-256 hashes, the build receipt, and QA evidence:
+
+~~~powershell
+python scripts/release_gate.py --artifacts
+~~~
+
+If GitHub Actions has not allocated a runner or no test steps executed, CI
+is **blocked, not passing**. Public source and signed binaries require
+separate explicit approval. See [CONTRIBUTING.md](CONTRIBUTING.md),
+[SECURITY.md](SECURITY.md), and [CHANGELOG.md](CHANGELOG.md).
+
 ## Verify, don't take our word for it
 
 Run the repository's browser parity, workspace, build, and backend checks:

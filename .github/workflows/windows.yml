@@ -3,12 +3,16 @@ on:
   push:
     tags: ['v*']
   workflow_dispatch:
-# Routine checks run on Ubuntu; Windows installer packaging is opt-in or tag-triggered.
+# Windows builds create *unsigned candidates*, not a published GitHub release.
 permissions:
   contents: read
+concurrency:
+  group: windows-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
   windows:
     runs-on: windows-2022
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -25,21 +29,51 @@ jobs:
           rustup toolchain install stable-x86_64-pc-windows-msvc --profile minimal
           rustup default stable-x86_64-pc-windows-msvc
       - run: npm ci
+      - name: Verify source, versions, and release policies
+        run: python scripts/release_gate.py
       - run: npm run format:check
-      - name: Verify browser simulator against the Python backend
+      - name: Verify browser against Python simulator
         run: npm run verify:browser
-      - run: python -m pip install -r scripts/build-requirements.txt
-      - name: Verify backend
+      - name: Verify workspace UI contracts
+        run: npm run verify:workspace
+      - name: Verify backend and release-gate regression tests
         shell: pwsh
         run: |
           $env:PYTHONPATH = 'backend'
           python -m unittest discover -s tests -v
-      - name: Build Windows installer
+      - run: python -m pip install -r scripts/build-requirements.txt
+      - name: Build unsigned Windows NSIS release candidate
         run: npm run desktop:build
       - name: Smoke test frozen backend and bundled CARLA client
         run: python scripts/desktop-smoke.py --backend src-tauri/binaries/ghostwheel-backend-x86_64-pc-windows-msvc.exe
-      - uses: actions/upload-artifact@v4
+      - name: Smoke test portable Windows UI and simulated safe stop
+        run: node scripts/desktop-native-smoke.mjs output/release/portable/ghostwheel.exe
+      - name: Test silent NSIS installation and binary identity
+        shell: pwsh
+        run: |
+          $installers = @(Get-ChildItem output/release -Filter '*-setup.exe' -File)
+          if ($installers.Count -ne 1) { throw 'Expected exactly one NSIS installer.' }
+          ./scripts/desktop-install-smoke.ps1 -InstallerPath $installers[0].FullName
+      - name: Smoke test installed Windows UI and backend cleanup
+        run: node scripts/desktop-native-smoke.mjs .build/install-smoke/ghostwheel.exe
+      - name: Final native and installer evidence verification
+        run: python scripts/desktop-final-verify.py
+      - name: Verify release hashes, portable ZIP, and all QA receipts
+        run: python scripts/release_gate.py --artifacts
+      - name: Upload verified release candidate (not published)
+        uses: actions/upload-artifact@v4
         with:
-          name: GHOSTWHEEL-Windows-x64
+          name: GHOSTWHEEL-Windows-x64-unsigned-candidate
           path: output/release/*
           if-no-files-found: error
+          retention-days: 14
+      - name: Retain release QA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: GHOSTWHEEL-Windows-QA-receipts
+          path: |
+            output/verification/*.json
+            output/screenshots/*.png
+          if-no-files-found: ignore
+          retention-days: 14

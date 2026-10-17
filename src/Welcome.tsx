@@ -52,8 +52,8 @@ export default function Welcome({ connected, onClose, onNavigate, onReconnect }:
         </div>
         <h2 id="welcome-title">Take the virtual driver's seat.</h2>
         <p id="welcome-description" className="welcome-description">
-          Explore how fictional electric vehicles respond to steering commands, safety checks,
-          and simulated faults. No programming or hardware is needed in the installed desktop app.
+          Explore how fictional electric vehicles respond to steering commands, safety checks, and
+          simulated faults. No programming or hardware is needed in the installed desktop app.
         </p>
         <div className="welcome-boundary">
           <ShieldCheck size={21} />

@@ -140,7 +140,8 @@ export class BrowserBackend {
       backend.recorder = restored;
       backend.recorder.begin(backend.world);
     } catch (error) {
-      backend.storageError = error instanceof Error ? error.message : 'Could not restore local sessions';
+      backend.storageError =
+        error instanceof Error ? error.message : 'Could not restore local sessions';
     }
     backend.start();
     return backend;

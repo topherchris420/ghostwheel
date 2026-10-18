@@ -184,7 +184,8 @@ export class Recorder {
         typeof raw.metadata_json !== 'string' ||
         typeof raw.summary_json !== 'string' ||
         typeof raw.head_sha256 !== 'string'
-      ) continue;
+      )
+        continue;
       const candidate = raw as unknown as StoredRun;
       this.store.set(candidate.id, candidate);
       try {

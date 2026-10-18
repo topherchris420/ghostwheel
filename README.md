@@ -49,10 +49,12 @@ Instead of showing a green light and asking you to trust it, the laboratory expo
 | **01 / DISCOVER** | [Launch the lab](https://ghostwheel-one.vercel.app), open **Operations**, and choose **ASTER**. | The vehicle has a modeled architecture, telemetry, and an authorization boundary. |
 | **02 / DRIVE** | Select **Enable controls**. Hold **W** to accelerate; steer with **A / D**; use **S** to brake. | Requested steering and modeled steering are not necessarily the same. |
 | **03 / EXPERIMENT** | Under **Test a safeguard**, choose **REPLAY / duplicate sequence** and select **Run scenario**. | The gateway rejects a reused command with the reason <code>replayed_sequence</code>. |
-| **04 / INVESTIGATE** | Open **Forensic replay**, load your run, inspect integrity, and export the recording or verifiable evidence. | A result is more useful when you can follow its event trail. |
+| **04 / INVESTIGATE** | Select **Finish drive & review**, inspect integrity, then choose **Save recording** or **Export verification ledger**. | A result is more useful when you can follow its event trail. |
 | **05 / UNDERSTAND** | Open **Research lab**, set a seed, and run the experiment suite. | The same test meets three different modeled vehicle architectures. |
 
 **Controls:** Hold **W** to accelerate, **S** to brake, **A / D** to steer, and press **Space** to request a virtual **Safe Stop**. Hold-and-release buttons also work. Keep the app window focused. The in-app **Quick start** and four-step walkthrough guide the same first investigation.
+
+**Operations starts with a focused driving view.** Select **Show technical instruments** for precision sliders, steering response, synthetic CAN messages, ECU health, and command events. Your view preference is remembered on this device. Opening replay stops the driving controls and pauses the live simulation; use **Return to simulator**, then **Resume simulation** to continue. Walkthrough progress belongs to the current run and survives leaving replay.
 
 Nothing in that sequence requires a real car, a CAN adapter, ROS 2, or CARLA.
 
@@ -137,8 +139,8 @@ There are two deliberately different exports:
 
 | Export | What it gives you | Important limit |
 | :--- | :--- | :--- |
-| **Session recording** | A JSON snapshot you can reopen for view-only playback. | Imported snapshots are marked **not verified here**; they do not carry the original event ledger. |
-| **Verifiable evidence** | The full event ledger for standalone structural and hash-chain verification. | A hash chain is not proof of independent provenance if someone can rewrite both the ledger and its saved head. |
+| **Save recording** | A JSON snapshot you can reopen for view-only playback. | Imported snapshots are marked **not verified here**; they do not carry the original event ledger. |
+| **Export verification ledger** | The full event ledger for standalone structural and hash-chain verification. | A hash chain is not proof of independent provenance if someone can rewrite both the ledger and its saved head. |
 
 Export important browser sessions. The browser retains recent runs in memory and attempts best-effort persistence with IndexedDB, but storage may be evicted or cleared. The Windows edition records to a local SQLite ledger.
 

@@ -30,6 +30,8 @@ export function useConsole() {
     [playing, setPlaying] = useState(false),
     [playbackSpeed, setPlaybackSpeed] = useState(1),
     [exportedRun, setExportedRun] = useState(''),
+    [inspectedRun, setInspectedRun] = useState(''),
+    [scenarioRun, setScenarioRun] = useState(''),
     [canPaused, setCanPaused] = useState(false),
     [heldFrames, setHeldFrames] = useState<Snapshot['can_frames']>([]),
     [carla, setCarla] = useState<{ available: boolean; connected: boolean; reason: string } | null>(
@@ -384,7 +386,12 @@ export function useConsole() {
   const getRuns = useCallback(async () => {
     const value = await request<{ runs: Run[]; storage_error?: string | null }>('/api/runs');
     setRuns(value.runs);
-    if (value.storage_error) setError('Browser archive could not be saved: ' + value.storage_error + '. Export important sessions.');
+    if (value.storage_error)
+      setError(
+        'Browser archive could not be saved: ' +
+          value.storage_error +
+          '. Export important sessions.',
+      );
   }, []);
   useEffect(() => {
     if (tab === 'forensics' && connected) void getRuns().catch((e) => setError(String(e)));
@@ -413,15 +420,18 @@ export function useConsole() {
   const loadReplay = (id: string) =>
     void action('replay', async () => {
       await stopControls();
+      // Keep the recorded session from growing while the user reviews it.
+      if (liveRef.current && !liveRef.current.paused) await request('/api/pause', { paused: true });
       const value = await request<Replay>('/api/replay?id=' + encodeURIComponent(id));
       if (!value.frames.length)
         throw new Error('This recording has no frames yet. Drive briefly, then try again.');
       setReplay({ ...value, source: 'local' });
+      setInspectedRun(value.run.id);
       setTab('forensics');
       setCanPaused(false);
       setReplayIndex(0);
       setPlaying(false);
-      setNotice('Recorded frames loaded. Replay is read-only.');
+      setNotice('Recording ready to review. The live simulation is paused.');
     });
   const exitReplay = () => {
     setReplay(null);
@@ -433,6 +443,8 @@ export function useConsole() {
         throw new Error('Choose a session file smaller than 64 MB.');
       const value = parseReplayFile(await file.text());
       await stopControls();
+      if (connectedRef.current && liveRef.current && !liveRef.current.paused)
+        await request('/api/pause', { paused: true });
       setReplay(value);
       setReplayIndex(0);
       setPlaying(false);
@@ -449,6 +461,7 @@ export function useConsole() {
         return;
       }
       if (!live) throw new Error('No live run to export');
+      await stopControls();
       saveJson(
         await request<Replay>('/api/replay?id=' + encodeURIComponent(live.run_id)),
         'ghostwheel-' + live.run_id + '.json',
@@ -462,13 +475,17 @@ export function useConsole() {
         await request<unknown>('/api/evidence?id=' + encodeURIComponent(runId)),
         'ghostwheel-evidence-' + runId + '.json',
       );
-      setNotice('Full evidence ledger downloaded. Verify offline; use an external signature to establish provenance.');
+      setNotice(
+        'Full evidence ledger downloaded. Verify offline; use an external signature to establish provenance.',
+      );
     });
   const executeScenario = () =>
     void action('scenario', async () => {
       await stopControls();
       setScenarioResult(null);
-      setScenarioResult(await request<ScenarioResult>('/api/scenario', { scenario_id: scenario }));
+      const result = await request<ScenarioResult>('/api/scenario', { scenario_id: scenario });
+      setScenarioResult(result);
+      setScenarioRun(liveRef.current?.run_id || '');
       setNotice('Synthetic scenario complete. Inspect gateway events and result.');
     });
   const runExperiments = () =>
@@ -483,7 +500,7 @@ export function useConsole() {
   const togglePause = () =>
     void action('pause', async () => {
       if (armed) await stopControls();
-      await request('/api/pause', { paused: !snapshot?.paused });
+      await request('/api/pause', { paused: !liveRef.current?.paused });
     });
   const toggleCan = () => {
     setHeldFrames(snapshot?.can_frames || []);
@@ -570,6 +587,8 @@ export function useConsole() {
     playbackSpeed,
     setPlaybackSpeed,
     exportedRun,
+    inspectedRun,
+    scenarioRun,
     canPaused,
     carla,
     arch,

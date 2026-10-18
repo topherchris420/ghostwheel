@@ -13,28 +13,44 @@ export default function Journey({ m }: { m: ConsoleModel }) {
   }, [moving, runId]);
   const steps = [
     { title: 'Drive', detail: 'Get the virtual car moving', done: !!runId && drivenRun === runId },
-    { title: 'Challenge', detail: 'Run a synthetic fault', done: !!m.scenarioResult },
+    {
+      title: 'Challenge',
+      detail: 'Run a synthetic fault',
+      done: !!runId && m.scenarioRun === runId && !!m.scenarioResult,
+    },
     {
       title: 'Inspect',
       detail: 'Verify and replay the run',
-      done: !!m.replay && m.replay.run.id === runId && m.replay.source !== 'imported',
+      done: !!runId && m.inspectedRun === runId,
     },
     { title: 'Keep', detail: 'Export your evidence', done: !!runId && m.exportedRun === runId },
   ];
   const next = steps.findIndex((step) => !step.done);
+  // An imported or older recording is separate from this live-run walkthrough.
+  if (m.replay && (m.replay.source === 'imported' || m.replay.run.id !== runId)) return null;
   if (hidden)
     return (
       <button className="journey-reopen" onClick={() => setHidden(false)}>
         <Compass size={14} /> Show first-run walkthrough
       </button>
     );
+  const recovery = next >= 0 && next < 2 && (!!m.replay || !!m.live?.paused);
   const proceed = () => {
+    if (recovery) {
+      m.exitReplay();
+      m.setTab('operations');
+      if (m.live?.paused && m.live.tick < 8000) m.togglePause();
+      return;
+    }
     if (next === 0) {
       m.exitReplay();
       m.setTab('operations');
       if (!m.armed) m.startControls();
       requestAnimationFrame(() =>
-        document.getElementById('driving-controls')?.scrollIntoView({ block: 'center' }),
+        document
+          .getElementById('driving-controls')
+          ?.closest('.field-panel')
+          ?.scrollIntoView({ block: 'start' }),
       );
     } else if (next === 1) {
       m.setTab('operations');
@@ -83,22 +99,22 @@ export default function Journey({ m }: { m: ConsoleModel }) {
       </ol>
       <button
         className="button primary journey-action"
-        disabled={
-          !m.connected || !!m.busy || (next < 2 && !!m.live?.paused) || (!!m.replay && next < 2)
-        }
+        disabled={!m.connected || !!m.busy || (next < 2 && (m.live?.tick ?? 0) >= 8000)}
         onClick={proceed}
       >
-        {next === 0
-          ? m.armed
-            ? 'Go to driving controls'
-            : 'Enable controls'
-          : next === 1
-            ? 'Run selected fault'
-            : next === 2
-              ? 'Inspect this run'
-              : next === 3
-                ? 'Export recording'
-                : 'Explore Research lab'}
+        {recovery
+          ? 'Return to driving'
+          : next === 0
+            ? m.armed
+              ? 'Go to driving controls'
+              : 'Enable controls'
+            : next === 1
+              ? 'Run selected fault'
+              : next === 2
+                ? 'Inspect this run'
+                : next === 3
+                  ? 'Export recording'
+                  : 'Explore Research lab'}
         <ArrowRight size={14} />
       </button>
       <button

@@ -37,7 +37,8 @@ try {
         export {BrowserBackend} from './src/sim/backend';
         export {default as Operations} from './src/Operations';
         export {default as Forensics} from './src/Forensics';
-        export {default as Journey} from './src/Journey';`,
+        export {default as Journey} from './src/Journey';
+        export {default as SessionStatus} from './src/SessionStatus';`,
       resolveDir: rootDir,
       loader: 'tsx',
     },
@@ -92,6 +93,7 @@ try {
     return React.createElement(
       React.Fragment,
       null,
+      React.createElement(mod.SessionStatus, { m: model }),
       React.createElement(mod.Journey, { m: model }),
       React.createElement(model.tab === 'forensics' ? mod.Forensics : mod.Operations, { m: model }),
     );
@@ -103,6 +105,18 @@ try {
   });
   assert.equal(model.connected, true);
   assert.equal(document.querySelector('button[aria-label="Accelerate"]').disabled, true);
+
+  const viewToggle = document.querySelector('.view-toolbar button');
+  assert.equal(viewToggle.getAttribute('aria-pressed'), 'false');
+  await act(async () => {
+    viewToggle.click();
+  });
+  assert.equal(window.localStorage.getItem('ghostwheel.instruments.v1'), 'shown');
+  assert.equal(viewToggle.getAttribute('aria-pressed'), 'true');
+  await act(async () => {
+    viewToggle.click();
+  });
+  console.log('PASS  focused driving is the default; instrument preference is saved');
 
   // A delayed accepted control must finish before stop; re-arming during stop is refused.
   await act(async () => {
@@ -156,7 +170,39 @@ try {
   assert.equal(calls.at(-1), '/api/stop');
   console.log('PASS  delayed control settles before Safe Stop, with re-arming blocked');
 
+  await act(async () => {
+    model.startControls();
+  });
+  await act(async () => {
+    model.setThrottle(0.3);
+  });
+  await act(async () => {
+    viewToggle.click();
+    await flush();
+  });
+  assert.equal(model.armed, false, 'changing instrument view stops virtual controls');
+  assert.equal(model.throttle, 0, 'a hidden precision slider cannot leave throttle set');
+  await act(async () => {
+    viewToggle.click();
+  });
+  console.log('PASS  switching instrument view stops controls and clears throttle');
+
   // Drive -> scenario -> replay is one actual recorded run.
+  await act(async () => {
+    model.startControls();
+  });
+  await act(async () => {
+    model.setThrottle(0.3);
+  });
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 120));
+  });
+  for (let batch = 0; batch < 6; batch++)
+    await act(async () => {
+      for (let i = 0; i < 4; i++) transport.tick();
+      await new Promise((resolve) => setTimeout(resolve, 110));
+    });
+  assert.equal(document.querySelector('.journey-steps li').className, 'complete');
   await act(async () => {
     for (let i = 0; i < 5; i++) transport.tick();
     model.executeScenario();
@@ -171,6 +217,12 @@ try {
   });
   assert.equal(model.tab, 'forensics');
   assert.equal(model.replay.integrity.verified, true);
+  assert.equal(transport.world.paused, true, 'review pauses the live simulation');
+  assert.equal(model.armed, false);
+  const pausedTick = transport.world.tick;
+  transport.tick();
+  assert.equal(transport.world.tick, pausedTick, 'review does not consume recording budget');
+  assert.equal(model.inspectedRun, runId);
   assert.match(document.body.textContent, /Recording integrity verified/);
   await act(async () => {
     model.setReplayIndex(model.replay.frames.length - 1);
@@ -187,6 +239,26 @@ try {
   console.log('PASS  scenario outcome, verified replay, reconstructed path and replay restart');
 
   const exported = JSON.stringify(model.replay);
+  await act(async () => {
+    model.exitReplay();
+    model.setTab('operations');
+  });
+  assert.equal(
+    document.querySelectorAll('.journey-steps li')[2].className,
+    'complete',
+    'inspection progress survives returning to driving',
+  );
+  assert.match(document.body.textContent, /Simulation paused/);
+  const resume = [...document.querySelectorAll('.session-status button')].find((button) =>
+    button.textContent.includes('Resume simulation'),
+  );
+  await act(async () => {
+    resume.click();
+    await flush();
+  });
+  assert.equal(transport.world.paused, false, 'visible recovery action resumes live state');
+  console.log('PASS  review freezes recording; progress survives exit; paused session resumes');
+
   const imported = mod.parseReplayFile(exported);
   assert.equal(imported.source, 'imported');
   assert.equal(imported.integrity.verified, false);
@@ -196,6 +268,11 @@ try {
     await flush();
   });
   assert.match(document.body.textContent, /Imported · not verified here/);
+  assert.equal(
+    document.querySelector('.journey'),
+    null,
+    'imported files do not claim live-run progress',
+  );
   assert.doesNotMatch(document.body.textContent, /Recording integrity verified/);
   console.log('PASS  exported sessions reopen; imported verification claims are never trusted');
 
@@ -253,6 +330,25 @@ try {
   assert.equal(model.scenarioResult, null);
   assert.equal(model.live.vehicle.architecture_id, 'vector');
   assert.equal(model.canPaused, false);
+  assert.notEqual(model.scenarioRun, model.live.run_id);
+  assert.equal(
+    document.querySelectorAll('.journey-steps li')[2].className,
+    '',
+    'new runs do not inherit inspection credit',
+  );
+  await act(async () => {
+    model.togglePause();
+    await flush();
+  });
+  const recoverJourney = document.querySelector('.journey-action');
+  assert.match(recoverJourney.textContent, /Return to driving/);
+  assert.equal(recoverJourney.disabled, false);
+  await act(async () => {
+    recoverJourney.click();
+    await flush();
+  });
+  assert.equal(transport.world.paused, false);
+  console.log('PASS  fresh runs clear walkthrough progress and its primary action recovers pause');
   assert.equal(domErrors.length, 0, 'no unhandled UI errors');
   console.log('PASS  focus loss stops driving; resetting clears stale scenario state');
 } finally {

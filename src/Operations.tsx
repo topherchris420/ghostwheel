@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   ArrowDownToLine,
   ArrowUpRight,
@@ -45,11 +46,48 @@ export default function Operations({ m }: { m: ConsoleModel }) {
     canPaused,
     displayHistory,
   } = m;
+  const [instruments, setInstruments] = useState(() => {
+    try {
+      return window.localStorage.getItem('ghostwheel.instruments.v1') === 'shown';
+    } catch {
+      return false;
+    }
+  });
+  const changeView = (show: boolean) => {
+    if (m.armed) void m.safeStop();
+    setInstruments(show);
+    try {
+      window.localStorage.setItem('ghostwheel.instruments.v1', show ? 'shown' : 'hidden');
+    } catch {
+      // View preferences are optional; the simulator works without browser storage.
+    }
+  };
   const rejectionPct = snapshot?.metrics.total
     ? (100 * snapshot.metrics.rejected) / snapshot.metrics.total
     : 0;
   return (
-    <>
+    <div className={instruments ? 'operations-view' : 'operations-view focused-view'}>
+      <div className="view-toolbar">
+        <div>
+          <b>
+            {instruments ? 'Every instrument. One investigation.' : 'Choose a car. Take the wheel.'}
+          </b>
+          <p>
+            {instruments
+              ? 'Inspect steering response, synthetic messages, and gateway decisions.'
+              : 'Drive below, then test a safeguard. Open the instruments whenever you want to look deeper.'}
+          </p>
+        </div>
+        <button
+          className="button secondary"
+          aria-pressed={instruments}
+          title="Switch view and stop virtual driving"
+          onClick={() => changeView(!instruments)}
+        >
+          <SlidersHorizontal size={15} />
+          {instruments ? 'Hide technical instruments' : 'Show technical instruments'}
+        </button>
+      </div>
       <div className="operations-grid">
         <div className="control-column">
           <section className="panel vehicle-panel">
@@ -80,6 +118,10 @@ export default function Operations({ m }: { m: ConsoleModel }) {
                 <ChevronDown size={14} />
               </div>
             </div>
+            <p className="architecture-description">{arch?.description}</p>
+            <p className="architecture-reset-note">
+              Changing the car archives this run and starts a new one.
+            </p>
             <div className="architecture-specs">
               <div>
                 <span>Wheelbase</span>
@@ -109,35 +151,10 @@ export default function Operations({ m }: { m: ConsoleModel }) {
               </div>
             </div>
           </section>
-          <section className="panel controls-panel" id="driving-controls">
-            <SectionTitle number="02" title="Virtual driving controls">
+          <section className="panel controls-panel">
+            <SectionTitle number="02" title="Precision controls">
               <SlidersHorizontal size={14} />
             </SectionTitle>
-            <div className="control-arm">
-              <div>
-                <span className={armed ? 'dot cyan' : 'dot amber'} />
-                <b>{armed ? 'CONTROLS ENABLED' : 'CONTROLS OFF'}</b>
-              </div>
-              <button
-                className={'toggle ' + (armed ? 'on' : '')}
-                aria-label={
-                  armed ? 'Disable virtual driving controls' : 'Enable virtual driving controls'
-                }
-                aria-pressed={armed}
-                disabled={!connected || !!replay || !!busy || snapshot?.paused}
-                onClick={() => (armed ? void m.safeStop() : m.startControls())}
-              >
-                <span />
-              </button>
-            </div>
-            <p className="control-quicktip">
-              {snapshot?.paused
-                ? 'Resume the simulation to enable driving controls.'
-                : armed
-                  ? 'Hold the buttons below or use W/A/S/D. Sliders keep their set value until you change it.'
-                  : 'Enable controls, then hold Accelerate to begin. Your drive is recorded automatically.'}
-            </p>
-            <DrivePad m={m} />
             <div className="steering-visual">
               <SteeringWheel angle={snapshot?.vehicle.steer_deg || 0} />
               <div>
@@ -219,13 +236,6 @@ export default function Operations({ m }: { m: ConsoleModel }) {
               <kbd>D</kbd>
               <span>virtual drive · space to stop</span>
             </div>
-            <button
-              className="safe-stop"
-              disabled={!connected || !!replay}
-              onClick={() => void m.safeStop()}
-            >
-              <Square size={12} fill="currentColor" /> SAFE STOP <span>SPACE</span>
-            </button>
           </section>
         </div>
         <div className="observation-column">
@@ -271,6 +281,49 @@ export default function Operations({ m }: { m: ConsoleModel }) {
                   <small> Hz</small>
                 </b>
               </div>
+            </div>
+            <div className="driving-station" id="driving-controls">
+              <div className="control-arm">
+                <div>
+                  <span className={armed ? 'dot cyan' : 'dot amber'} />
+                  <b>{armed ? 'CONTROLS ENABLED' : 'CONTROLS OFF'}</b>
+                </div>
+                <button
+                  className={'button ' + (armed ? 'secondary' : 'primary')}
+                  aria-label={
+                    armed ? 'Disable virtual driving controls' : 'Enable virtual driving controls'
+                  }
+                  aria-pressed={armed}
+                  disabled={!connected || !!replay || !!busy || snapshot?.paused}
+                  onClick={() => (armed ? void m.safeStop() : m.startControls())}
+                >
+                  {armed ? 'Disable controls' : 'Enable controls'}
+                </button>
+              </div>
+              <p className="control-quicktip">
+                {snapshot?.paused
+                  ? 'Resume the simulation to enable driving controls.'
+                  : armed
+                    ? instruments
+                      ? 'Hold the buttons below or use W/A/S/D. Precision sliders keep their set value until you change it.'
+                      : 'Hold the buttons below or use W/A/S/D. Release to coast; press Space for Safe Stop.'
+                    : 'Enable controls, then hold Accelerate to begin. Your drive is recorded automatically.'}
+              </p>
+              <DrivePad m={m} />
+              <button
+                className="safe-stop"
+                disabled={!connected || !!replay}
+                onClick={() => void m.safeStop()}
+              >
+                <Square size={12} fill="currentColor" /> SAFE STOP <span>SPACE</span>
+              </button>
+              <button
+                className="button secondary finish-drive"
+                disabled={!connected || !!busy || !!replay || !snapshot?.tick}
+                onClick={() => snapshot && m.loadReplay(snapshot.run_id)}
+              >
+                <CheckCheck size={15} /> Finish drive &amp; review
+              </button>
             </div>
           </section>
           <section className="panel response-panel">
@@ -491,7 +544,7 @@ export default function Operations({ m }: { m: ConsoleModel }) {
         <SectionTitle number="09" title="Command & security events">
           <Terminal size={14} />
           <button className="text-button" disabled={!connected || !!busy} onClick={m.exportRun}>
-            <ArrowDownToLine size={12} /> EXPORT EVIDENCE
+            <ArrowDownToLine size={12} /> SAVE RECORDING
           </button>
           <span className="push-right mono tiny muted">
             {snapshot?.run_id?.slice(0, 18) || 'NO ACTIVE RUN'}
@@ -518,12 +571,10 @@ export default function Operations({ m }: { m: ConsoleModel }) {
               </div>
             ))}
           {!snapshot?.events.length && (
-            <div className="table-empty">
-              No commands issued. Arm the simulation session to begin.
-            </div>
+            <div className="table-empty">No commands issued. Enable driving controls to begin.</div>
           )}
         </div>
       </section>
-    </>
+    </div>
   );
 }

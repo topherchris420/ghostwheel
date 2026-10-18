@@ -64,6 +64,14 @@ export default function Forensics({ m }: { m: ConsoleModel }) {
           />
           <p>Reopen an exported session JSON. The file stays on your device.</p>
         </div>
+        {replay && (
+          <div className="recording-actions">
+            <button className="button primary" disabled={!!busy} onClick={m.exportRun}>
+              <Download size={15} /> Save recording
+            </button>
+            <p>Download a session JSON you can open here again.</p>
+          </div>
+        )}
         {replay && !imported && (
           <div className="recording-actions">
             <button
@@ -71,9 +79,12 @@ export default function Forensics({ m }: { m: ConsoleModel }) {
               disabled={!!busy}
               onClick={() => m.exportEvidence(replay.run.id)}
             >
-              <Download size={15} /> Export verifiable evidence
+              <Download size={15} /> Export verification ledger
             </button>
-            <p>Download the original event ledger for independent verification and optional detached signing.</p>
+            <p>
+              Download the original event ledger for independent verification and optional detached
+              signing.
+            </p>
           </div>
         )}
         <div className="run-library-heading">
@@ -82,9 +93,9 @@ export default function Forensics({ m }: { m: ConsoleModel }) {
         </div>
         {edition === 'browser' && (
           <p className="run-library-note">
-            The {RETAINED_RUNS} most recent runs stay in this tab until it closes or reloads.
-            The browser keeps its most recent sessions locally in IndexedDB when available.
-            Browser storage can be cleared or evicted. Download an evidence bundle to keep a permanent copy.
+            Up to {RETAINED_RUNS} recent runs are kept on this device when browser storage is
+            available. Storage can be cleared or evicted. Save a recording to keep a copy you can
+            reopen here; export the ledger for independent verification.
           </p>
         )}
         {(busy === 'replay' || busy === 'import') && (

@@ -34,7 +34,10 @@ export default function InterfaceWorkflows() {
         <div className={view === 'monitor' ? 'active' : ''}>
           <span className="profile-index">PASSIVE</span>
           <h3>Physical vehicle diagnostics</h3>
-          <p>Observe authorized CAN or serial data, including PACMod3 status, from a local ROS 2 process.</p>
+          <p>
+            Observe authorized CAN or serial data, including PACMod3 status, from a local ROS 2
+            process.
+          </p>
           <button
             type="button"
             className="button secondary"
@@ -64,13 +67,13 @@ export default function InterfaceWorkflows() {
             <b>Hardware observation runs locally, outside this browser</b>
             <p>
               Build <code>ros2/ghostwheel_vehicle_interface</code> in your Autoware workspace, then
-              run <code>ros2 run ghostwheel_vehicle_interface ghostwheel_vehicle_interface</code> with
-              parameters <code>--ros-args -p interface_type:=can -p can_device:=can0</code>.
+              run <code>ros2 run ghostwheel_vehicle_interface ghostwheel_vehicle_interface</code>{' '}
+              with parameters <code>--ros-args -p interface_type:=can -p can_device:=can0</code>.
             </p>
             <p>
               For PACMod3 feedback, install pacmod3_msgs and run{' '}
-              <code>ros2 run ghostwheel_vehicle_interface ghostwheel_pacmod3_adapter</code>.
-              This browser does not connect to ROS. Physical actuation remains disabled.
+              <code>ros2 run ghostwheel_vehicle_interface ghostwheel_pacmod3_adapter</code>. This
+              browser does not connect to ROS. Physical actuation remains disabled.
             </p>
             <p>
               <a

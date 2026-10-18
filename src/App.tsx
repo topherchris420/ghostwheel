@@ -26,6 +26,7 @@ import Forensics from './Forensics';
 import Protocol from './Protocol';
 import Welcome from './Welcome';
 import Journey from './Journey';
+import SessionStatus from './SessionStatus';
 // Loaded on demand: it carries the full license texts.
 const About = lazy(() => import('./About'));
 export default function App() {
@@ -280,26 +281,20 @@ export default function App() {
               </button>
             </div>
           )}
-          {!replay && snapshot?.paused && snapshot.tick >= 8000 && (
-            <div className="message">
-              <Database size={16} />
-              <div>
-                <b>Recording budget reached</b>
-                <span>
-                  This bounded session has paused. Reset the simulation to archive it and continue
-                  with a fresh run.
-                </span>
-              </div>
-            </div>
-          )}
+          <SessionStatus m={m} />
           {replay && (
             <div className="replay-banner">
               <span>
                 <Database size={15} /> FORENSIC REPLAY <b>{replay.run.id.slice(0, 16)}</b> ·
                 Read-only recorded state
               </span>
-              <button onClick={m.exitReplay}>
-                Return to live <ArrowUpRight size={14} />
+              <button
+                onClick={() => {
+                  m.exitReplay();
+                  m.setTab('operations');
+                }}
+              >
+                Return to simulator <ArrowUpRight size={14} />
               </button>
             </div>
           )}

@@ -4,6 +4,12 @@ Changes for release candidates are tracked here. A repository commit, successful
 
 ## Unreleased
 
+- Added a focused Operations view with driving controls beside the live field and optional technical instruments; the view preference is saved on-device.
+- Added Finish drive & review, which stops driving controls and pauses the live simulation before opening replay.
+- Kept walkthrough inspection progress after leaving replay, scoped scenario progress to its run, and added visible pause/reset recovery actions.
+- Clarified Save recording versus Export verification ledger and corrected the browser retention guidance.
+- Extended interface integration coverage for view preferences, paused replay, walkthrough progress, and recovery.
+
 - Added a repeatable release gate for source/version consistency, MSVC artifact integrity, and complete native/installer QA evidence.
 - Added adversarial regression tests for altered installers, mutated portable ZIPs, unverified native smoke, and mismatched source versions.
 - Promoted Windows native/UI/install smoke and final artifact verification into the Windows workflow, before any artifact upload.

@@ -21,7 +21,7 @@ export function parseReplayFile(contents: string): Replay {
   }
   if (!record(value) || !record(value.run) || !Array.isArray(value.frames))
     throw new Error(
-      'This is not a session recording. Export a session, rather than a research report.',
+      'This is not a session recording. Use Save recording for a file you can reopen here. Research reports and verification ledgers use separate formats.',
     );
   const run = value.run;
   if (

@@ -1,4 +1,169 @@
 /* The guided workflow shares the console's instrument-panel visual language. */
+.view-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.view-toolbar b {
+  font-size: 15px;
+  color: #d7e9ec;
+}
+.view-toolbar p,
+.architecture-description,
+.architecture-reset-note {
+  color: #a9bdc5;
+  font-size: 12px;
+  line-height: 1.7;
+  margin-top: 6px;
+}
+.architecture-description,
+.architecture-reset-note {
+  padding: 0 18px;
+}
+.architecture-reset-note {
+  font-size: 11px;
+  color: #8ea6b2;
+  margin-bottom: 16px;
+}
+.driving-station {
+  border-top: 1px solid var(--border);
+  padding: 16px 20px 20px;
+  scroll-margin-top: 72px;
+}
+.driving-station .control-arm {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  gap: 12px;
+}
+.driving-station .control-arm b {
+  font-size: 10px;
+  letter-spacing: 0.4px;
+}
+.driving-station .control-arm .button {
+  min-height: 40px;
+  font-size: 12px;
+}
+.driving-station .control-arm .dot {
+  width: 5px;
+  height: 5px;
+}
+.focused-view .test-field {
+  width: 100%;
+  height: clamp(210px, 28vw, 340px);
+}
+.field-panel {
+  scroll-margin-top: 64px;
+}
+.driving-station .control-quicktip {
+  padding: 0;
+}
+.driving-station .drive-pad {
+  padding: 0 0 14px;
+}
+.driving-station .drive-pad > div {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.driving-station .drive-pad button {
+  flex-direction: column;
+  min-height: 60px;
+}
+.driving-station .safe-stop {
+  width: 100%;
+  margin: 0 0 10px;
+  min-height: 44px;
+}
+.driving-station .finish-drive {
+  width: 100%;
+  justify-content: center;
+  min-height: 42px;
+}
+.focused-view .operations-grid {
+  grid-template-columns: minmax(240px, 0.7fr) minmax(0, 1.7fr);
+  grid-template-rows: min-content 1fr;
+  gap: 18px;
+}
+.focused-view .control-column,
+.focused-view .observation-column,
+.focused-view .intelligence-column {
+  display: contents;
+}
+.focused-view .field-panel {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+.focused-view .vehicle-panel {
+  grid-column: 1;
+  grid-row: 1;
+}
+.focused-view .scenario-panel {
+  grid-column: 1;
+  grid-row: 2;
+}
+.focused-view .controls-panel,
+.focused-view .response-panel,
+.focused-view .can-panel,
+.focused-view .gateway-panel,
+.focused-view .ecu-panel,
+.focused-view .isolation-note,
+.focused-view .event-panel,
+.focused-view .architecture-specs {
+  display: none;
+}
+.session-status {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 18px 20px;
+  margin-bottom: 20px;
+  border: 1px solid #53625a;
+  border-radius: 6px;
+  background: #1c2928;
+  color: #c1d8d3;
+}
+.session-status > div {
+  flex: 1 1 280px;
+}
+.session-status b {
+  font-size: 14px;
+}
+.session-status p {
+  margin-top: 5px;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #adbfbb;
+}
+@media (max-width: 760px) {
+  .focused-view .operations-grid {
+    display: flex;
+    flex-direction: column;
+  }
+  .focused-view .operations-grid > div > .field-panel {
+    order: 1;
+  }
+  .focused-view .operations-grid > div > .vehicle-panel {
+    order: 2;
+  }
+  .focused-view .operations-grid > div > .scenario-panel {
+    order: 3;
+  }
+  .view-toolbar .button {
+    width: 100%;
+    justify-content: center;
+    min-height: 44px;
+  }
+  .driving-station {
+    padding: 16px;
+  }
+  .session-status .button {
+    flex: 1 1 auto;
+    justify-content: center;
+    min-height: 44px;
+  }
+}
 .visually-hidden {
   position: absolute;
   width: 1px;

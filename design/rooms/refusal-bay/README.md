@@ -45,7 +45,7 @@ GHOSTWHEEL's built-in physics does **not** model walls, collision, stopping dist
 
 **The project owner explicitly approved the concept direction on October 17, 2026** (see `design-approval.json`). The approval does not release the Function, Form, paid-asset or Runtime gates.
 
-**Function gate cannot pass yet.** Before paid generation: produce approved isolated prop images, derive top-down orthographic lower-room and reflected-ceiling plans from actual procedural/mesh geometry, render wall elevations, produce traced binary PNG opening masks/contact sheet, prove ingress/hero/symmetry and obtain explicit design approval. Credit ceiling is **0** and `pricingVerifiedAt` is intentionally empty. The 15-credit value is a **template placeholder, not verified current pricing**, and no Meshy submission is authorized.
+**The owner approved The Refusal Bay as GHOSTWHEEL's first 3D environment on 2026-10-17.** This authorizes the concept direction, not paid generation, final composition or deployment. **Function gate cannot pass yet.** Before paid generation: produce approved isolated prop images, derive top-down orthographic lower-room and reflected-ceiling plans from actual procedural/mesh geometry, render wall elevations, produce traced binary PNG opening masks/contact sheet, prove ingress/hero/symmetry and obtain explicit design approval. Credit ceiling is **0** and `pricingVerifiedAt` is intentionally empty. The 15-credit value is a **template placeholder, not verified current pricing**, and no Meshy submission is authorized.
 
 After Function approval, separately implement and audit Blender Form, then validate an actual browser runtime capture and request Runtime approval before publication. Do not treat a procedural or SVG concept as a shipped room.
 

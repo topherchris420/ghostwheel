@@ -13,7 +13,7 @@
       "masks/primary-arrival-concept.svg"
     ],
     "strangestElement": "The car is an authoritative-feeling hologram even though the backend does not model physical walls; the interface must never imply collision or physical containment.",
-    "notes": "Concept and spatial contract drafted. Missing approved isolated prop references, actual-mesh orthographic plans, wall elevations, traced binary opening masks, human approval. The project owner approved the **concept direction** on 2026-10-17, not this Function gate; preserve pending until all evidence, individual images, opening cutters and layout are reviewed."
+    "notes": "Concept direction approved by project owner Oct 17, 2026. Function gate PENDING: reference contact sheet and explicit approvals for individual mesh-ready prop images, actual mesh-derived orthographic plans, wall elevations, and traced binary opening masks/cutter are still missing."
   },
   "form": {
     "status": "pending",
@@ -30,5 +30,14 @@
     "evidence": [],
     "strangestElement": "",
     "notes": "No deployment before Form review and runtime capture."
+  },
+  "concept": {
+    "status": "approved",
+    "approvedAt": "2026-10-17",
+    "approvedBy": "project owner in this conversation",
+    "scope": "The Refusal Bay conceptual environment is approved as GHOSTWHEEL's first 3D environment. Does not constitute Function/Form/Runtime gate approval, isolated asset-image approval, third-party spending authorization, or publication.",
+    "evidence": [
+      "Owner answered yes to approving The Refusal Bay as GHOSTWHEEL's first 3D environment."
+    ]
   }
 }

@@ -14,6 +14,8 @@
 <p align="center">
   <a href="https://ghostwheel-one.vercel.app"><strong>LAUNCH GHOSTWHEEL ↗</strong></a>
   &nbsp;·&nbsp;
+  &nbsp;·&nbsp;
+  <a href="https://ghostwheel-one.vercel.app/ghostwheel-decision-lab.html">Interactive diagram</a>
   <a href="#your-first-investigation">First five minutes</a>
   &nbsp;·&nbsp;
   <a href="#inside-the-machine">How it works</a>
@@ -27,6 +29,24 @@
 
 > [!IMPORTANT]
 > **This is a simulation-first research and education platform, not a real-vehicle controller.** The web and desktop apps cannot steer, accelerate, or brake physical vehicles. A separate, optional ROS 2 package supports **synthetic Autoware actuation** or **passive, authorized vehicle observation**. Its PACMod3 observer does not issue drive-by-wire commands or perform a physical emergency stop.
+
+## Explore the invisible decision
+
+**What happens when a simulated car refuses to obey?** Try the interactive GHOSTWHEEL decision lab. Choose a command scenario, watch the authorization gateway reach a verdict, and follow its modeled vehicle response into the evidence trail.
+
+<a href="https://ghostwheel-one.vercel.app/ghostwheel-decision-lab.html">
+  <img src="docs/marketing/ghostwheel-decision-diagram.svg" alt="Interactive GHOSTWHEEL command path preview: a replayed steering command is rejected by the authorization gateway, resulting in a virtual safe state and recorded evidence. Click to explore five scenarios." width="100%">
+</a>
+
+<p align="center">
+  <a href="https://ghostwheel-one.vercel.app/ghostwheel-decision-lab.html"><strong>EXPLORE THE INTERACTIVE DIAGRAM ↗</strong></a>
+  &nbsp;·&nbsp;
+  <a href="https://ghostwheel-one.vercel.app"><strong>LAUNCH THE FULL SIMULATOR ↗</strong></a>
+</p>
+
+**Five scenarios:** accepted steering · replayed sequence · conflicting pedals · stale command · expired command lease. Compare the fictional ASTER, VECTOR, and NOMAD vehicle profiles. The diagram is an educational illustration of documented rules, not a live connection to the simulator or a real vehicle.
+
+---
 
 ## The interesting part is the refusal
 

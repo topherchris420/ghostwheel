@@ -4,6 +4,9 @@ Changes for release candidates are tracked here. A repository commit, successful
 
 ## Unreleased
 
+- Removed the unavailable Validate simulator GitHub Actions workflow; local verification commands remain available.
+- Preserved current-run walkthrough progress when reviewing or saving older/imported recordings, and kept the Research lab action usable after a completed run reaches its recording limit.
+
 - Added a focused Operations view with driving controls beside the live field and optional technical instruments; the view preference is saved on-device.
 - Added Finish drive & review, which stops driving controls and pauses the live simulation before opening replay.
 - Kept walkthrough inspection progress after leaving replay, scoped scenario progress to its run, and added visible pause/reset recovery actions.

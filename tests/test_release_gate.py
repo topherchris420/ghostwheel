@@ -73,6 +73,23 @@ class ReleaseGateTests(unittest.TestCase):
     def test_clean_source_preflight(self):
         self.assertEqual(gate.source_preflight(self.root), "0.1.0")
 
+    def test_source_preflight_does_not_require_removed_workflow(self):
+        (self.root / ".github/workflows/validate.yml").unlink(missing_ok=True)
+        self.assertEqual(gate.source_preflight(self.root), "0.1.0")
+
+    def test_missing_local_verifiers_block_release(self):
+        for name in ("scripts/verify.py", "scripts/verify-browser-sim.mjs",
+                     "scripts/verify-workspace.mjs"):
+            with self.subTest(script=name):
+                path = self.root / name
+                contents = path.read_bytes()
+                path.unlink()
+                try:
+                    with self.assertRaisesRegex(gate.ReleaseGateError, "Missing release prerequisite"):
+                        gate.source_preflight(self.root)
+                finally:
+                    path.write_bytes(contents)
+
     def test_mismatched_version_blocks_release(self):
         value = gate.read_json(self.root / "src-tauri/tauri.conf.json")
         value["version"] = "0.2.0"

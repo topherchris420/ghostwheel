@@ -1,0 +1,111 @@
+{
+  "schema": "game-room.prop-manifest.v1",
+  "roomId": "ghostwheel-refusal-bay",
+  "generation": {
+    "provider": "meshy",
+    "apiModel": "meshy-5",
+    "pricingSource": "https://docs.meshy.ai/en/api/pricing",
+    "pricingVerifiedAt": "",
+    "creditsPerTexturedTask": 15,
+    "hardCreditCeiling": 0,
+    "maxChargedAttemptsPerAsset": 2
+  },
+  "assets": [
+    {
+      "id": "fictional-ev",
+      "function": "Read-only hero display of the three fictional vehicle architectures",
+      "class": "hero",
+      "description": "Original compact electric teaching vehicle shell; no manufacturer resemblance or real CAN hardware",
+      "dimensionsMeters": [
+        4.6,
+        2,
+        1.65
+      ],
+      "attachmentFace": "floor",
+      "semanticFront": "negative-y",
+      "intendedInstances": 1,
+      "image": {
+        "prompt": "One complete original futuristic compact electric hatchback concept vehicle, physically plausible tires touching ground, strong readable front and rear, full uncropped three-quarter front view, graphite metallic paint, subtle frosted cyan instrumentation lines, visible wheel volume and undercarriage, evenly lit neutral studio background. Exactly one vehicle, no driver, room, text, logo, floor display, dramatic crop or floating pieces.",
+        "generator": "not-generated",
+        "model": "",
+        "source": "images/fictional-ev.pending.png",
+        "approved": false,
+        "approvedBy": ""
+      },
+      "targetPolycount": 35000,
+      "texturePrompt": "Graphite ceramic, satin steel, diffused cyan glass; plausible PBR surfaces; no writing or logos.",
+      "rejectionCriteria": [
+        "Silhouette cropped or wheels missing",
+        "Fused body and background",
+        "Geometry lacks back surface",
+        "Visually resembles an identified real OEM design"
+      ],
+      "attempts": [],
+      "acceptedMesh": null
+    },
+    {
+      "id": "decision-pylon",
+      "function": "Show accepted, pending and rejected command verdicts without becoming traffic signs",
+      "class": "reusable",
+      "description": "Freestanding monolithic prism with opaque structural foot and controllable diffuse indicator",
+      "dimensionsMeters": [
+        0.75,
+        0.75,
+        2.4
+      ],
+      "attachmentFace": "floor",
+      "semanticFront": "positive-y",
+      "intendedInstances": 4,
+      "image": {
+        "prompt": "One full freestanding laboratory signal pylon, hexagonal graphite base wider than column, slim central solid structural spine, single recessed vertical frosted glass luminous strip, four distinct visible structural sides, stable flat mounting foot, full uncropped three-quarter view on uniform neutral gray studio background, even light, no text, letters, road sign, floating parts, neighboring objects or room.",
+        "generator": "not-generated",
+        "model": "",
+        "source": "images/decision-pylon.pending.png",
+        "approved": false,
+        "approvedBy": ""
+      },
+      "targetPolycount": 4800,
+      "texturePrompt": "Graphite ceramic, satin steel, diffused cyan glass; plausible PBR surfaces; no writing or logos.",
+      "rejectionCriteria": [
+        "No stable base",
+        "Back/side unsupported",
+        "Indicator glass fused to background",
+        "Unclear attachment face"
+      ],
+      "attempts": [],
+      "acceptedMesh": null
+    },
+    {
+      "id": "evidence-console",
+      "function": "Allow spectators to investigate the ordered synthetic event trail",
+      "class": "reusable",
+      "description": "Low waist-high evidence workstation; UI screens rendered at runtime, not baked into a texture",
+      "dimensionsMeters": [
+        2.2,
+        0.85,
+        1.2
+      ],
+      "attachmentFace": "floor",
+      "semanticFront": "positive-y",
+      "intendedInstances": 2,
+      "image": {
+        "prompt": "A single waist-high automotive research workstation with sturdy four-legged steel support, solid tabletop and one angled blank glass display with distinct back casing, elegant industrial graphite and cyan accents, full uncropped neutral three-quarter view with leg contacts visible, even studio lighting and plain background, no writing, no interface text, people, cables, other props, room or clipped geometry.",
+        "generator": "not-generated",
+        "model": "",
+        "source": "images/evidence-console.pending.png",
+        "approved": false,
+        "approvedBy": ""
+      },
+      "targetPolycount": 7500,
+      "texturePrompt": "Graphite ceramic, satin steel, diffused cyan glass; plausible PBR surfaces; no writing or logos.",
+      "rejectionCriteria": [
+        "Supports disconnected",
+        "Display lacks casing or back",
+        "Unusable blank screen shape",
+        "Floating geometry"
+      ],
+      "attempts": [],
+      "acceptedMesh": null
+    }
+  ]
+}

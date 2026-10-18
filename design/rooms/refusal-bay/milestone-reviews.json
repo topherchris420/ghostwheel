@@ -1,0 +1,43 @@
+{
+  "schema": "game-room.milestone-reviews.v1",
+  "roomId": "ghostwheel-refusal-bay",
+  "function": {
+    "status": "pending",
+    "approvedBy": "",
+    "approvedAt": "",
+    "evidence": [
+      "room-brief.json",
+      "props.json",
+      "plans/concept-floorplan.svg",
+      "plans/concept-reflected-ceiling.svg",
+      "masks/primary-arrival-concept.svg"
+    ],
+    "strangestElement": "The car is an authoritative-feeling hologram even though the backend does not model physical walls; the interface must never imply collision or physical containment.",
+    "notes": "Concept direction approved by project owner Oct 17, 2026. Function gate PENDING: reference contact sheet and explicit approvals for individual mesh-ready prop images, actual mesh-derived orthographic plans, wall elevations, and traced binary opening masks/cutter are still missing."
+  },
+  "form": {
+    "status": "pending",
+    "approvedBy": "",
+    "approvedAt": "",
+    "evidence": [],
+    "strangestElement": "",
+    "notes": "Do not compose Blender production room or ship proxies before Function approval."
+  },
+  "runtime": {
+    "status": "pending",
+    "approvedBy": "",
+    "approvedAt": "",
+    "evidence": [],
+    "strangestElement": "",
+    "notes": "No deployment before Form review and runtime capture."
+  },
+  "concept": {
+    "status": "approved",
+    "approvedAt": "2026-10-17",
+    "approvedBy": "project owner in this conversation",
+    "scope": "The Refusal Bay conceptual environment is approved as GHOSTWHEEL's first 3D environment. Does not constitute Function/Form/Runtime gate approval, isolated asset-image approval, third-party spending authorization, or publication.",
+    "evidence": [
+      "Owner answered yes to approving The Refusal Bay as GHOSTWHEEL's first 3D environment."
+    ]
+  }
+}

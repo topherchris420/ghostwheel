@@ -1,0 +1,23 @@
+{
+  "schema": "game-room.opening-schedule.v1",
+  "roomId": "ghostwheel-refusal-bay",
+  "primaryArrival": {
+    "openingId": "south-arrival",
+    "exception": ""
+  },
+  "openings": [
+    {
+      "id": "south-arrival",
+      "kind": "door",
+      "wall": "south-wall-boolean-pending",
+      "widthMeters": 3.6,
+      "heightMeters": 3.4,
+      "thresholdMeters": 0,
+      "depthMeters": 0.35,
+      "mask": "masks/primary-arrival-concept.svg",
+      "cutter": "masks/south-arrival-cutter.pending.json",
+      "destination": "Visible 4 m visitor approach corridor outside the south wall; actual exterior floor and boolean cutter still require geometry design and approval.",
+      "approved": false
+    }
+  ]
+}

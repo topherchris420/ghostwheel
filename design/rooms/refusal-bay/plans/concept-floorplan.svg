@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 740" role="img" aria-label="Preliminary black and white concept floor plan, not an approved mesh-derived projection">
+<rect width="960" height="740" fill="white"/>
+<g transform="translate(480 345) scale(19 -19)" stroke="#111" fill="none">
+<path d="M-18 -12 H-1.8 M1.8 -12 H18 V12 H-18 Z M-18 -12 V12" stroke-width=".20"/>
+<rect x="-18" y="-12" width="36" height="24" stroke="#111" stroke-width=".07" stroke-dasharray=".3 .2"/>
+<rect x="-8" y="-6" width="16" height="12" stroke-width=".10" stroke-dasharray=".25 .20"/>
+<rect x="-7.2" y="-5.2" width="14.4" height="10.4" stroke-width=".025" stroke-dasharray=".1 .35"/>
+<path d="M-1.8 -12 V-16 H1.8 V-12" stroke-width=".08"/>
+<path d="M-1.8 -16 H1.8" stroke-width=".14" stroke-dasharray=".2 .2"/>
+<rect x="-2.3" y="-1.0" width="4.6" height="2.0" rx=".6" fill="#ddd" stroke-width=".07"/>
+<rect x="-1.5" y="-.95" width="3.0" height="1.9" rx=".4" stroke-width=".04"/>
+<path d="M0 -11.5 V-7.8 M0 -7.0 V-6.2" stroke-width=".13" stroke-dasharray=".2 .2"/>
+<path d="M-11 -8.5 H-9 V8.5 H-11 M11 -8.5 H9 V8.5 H11" stroke-width=".08" stroke-dasharray=".3 .4"/>
+<rect x="-13.8" y="-.43" width="1.6" height=".86" stroke-width=".07" fill="#ddd"/>
+<rect x="12.2" y="-.43" width="1.6" height=".86" stroke-width=".07" fill="#ddd"/>
+<g fill="#888"><circle cx="-10" cy="-6" r=".38"/><circle cx="-10" cy="6" r=".38"/><circle cx="10" cy="-6" r=".38"/><circle cx="10" cy="6" r=".38"/></g>
+<g stroke-width=".04" stroke-dasharray=".07 .13"><path d="M-16 -9 H16 M-16 9 H16"/></g>
+</g></svg>

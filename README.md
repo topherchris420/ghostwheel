@@ -72,6 +72,24 @@ Change vehicles. Repeat a test. Compare the response.
 
 These are **original, simplified models** with invented parameters, virtual ECU names, and synthetic CAN frames. They are not digital twins of commercial vehicles, validated OEM calibrations, or firmware emulators. The point is to understand *how assumptions change outcomes*, not to rank real cars by security.
 
+## GW-01 concept blueprint
+
+**The invisible decision, made visible.** Explore a high-level CAD-style
+interpretation of ASTER's virtual chassis, command gateway, synthetic
+telemetry, software ECUs, and recorded evidence.
+
+![Exploded axonometric blueprint of GHOSTWHEEL GW-01 ASTER](docs/cad/ghostwheel-gw01-exploded.svg)
+
+**Explore the assembly:** [Editable 3D OpenSCAD model](docs/cad/gw01-aster.scad)
+· [Full blueprint notes](docs/cad/README.md)
+· [Engineering architecture](docs/engineering.md)
+
+This is a **conceptual research illustration**, not a physical vehicle
+controller or build-ready automotive CAD model. ASTER's **2.65 m wheelbase**
+comes from the simulator; the rest of the geometry is illustrative.
+No browser or desktop control path reaches real steering, throttle, or
+brakes.
+
 ## The gateway
 
 **Every request has to earn its way to a simulated actuator.**

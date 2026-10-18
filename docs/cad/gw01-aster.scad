@@ -1,6 +1,7 @@
 // GHOSTWHEEL / GW-01 - ASTER exploded research model
 // Parametric OpenSCAD teaching artifact. MIT license.
-\n// Source: https://github.com/topherchris420/ghostwheel
+
+// Source: https://github.com/topherchris420/ghostwheel
 // This is a conceptual physical visualization of a software simulator.
 // NO automotive manufacturing dimensions, electronics design, CAN wiring,
 // motion-control hardware, or physical vehicle functionality are specified.

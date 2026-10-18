@@ -1,0 +1,34 @@
+{
+  "schema": "game-room.milestone-reviews.v1",
+  "roomId": "ghostwheel-refusal-bay",
+  "function": {
+    "status": "pending",
+    "approvedBy": "",
+    "approvedAt": "",
+    "evidence": [
+      "room-brief.json",
+      "props.json",
+      "plans/concept-floorplan.svg",
+      "plans/concept-reflected-ceiling.svg",
+      "masks/primary-arrival-concept.svg"
+    ],
+    "strangestElement": "The car is an authoritative-feeling hologram even though the backend does not model physical walls; the interface must never imply collision or physical containment.",
+    "notes": "Concept and spatial contract drafted. Missing approved isolated prop references, actual-mesh orthographic plans, wall elevations, traced binary opening masks, human approval."
+  },
+  "form": {
+    "status": "pending",
+    "approvedBy": "",
+    "approvedAt": "",
+    "evidence": [],
+    "strangestElement": "",
+    "notes": "Do not compose Blender production room or ship proxies before Function approval."
+  },
+  "runtime": {
+    "status": "pending",
+    "approvedBy": "",
+    "approvedAt": "",
+    "evidence": [],
+    "strangestElement": "",
+    "notes": "No deployment before Form review and runtime capture."
+  }
+}

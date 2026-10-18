@@ -1,0 +1,78 @@
+{
+  "schema": "game-room.room-brief.v1",
+  "roomId": "ghostwheel-refusal-bay",
+  "family": "gameplay-room",
+  "purpose": "An explorable-looking, read-only 3D visualization of fictional electric-vehicle simulation, authorization verdicts and reproducible evidence. Vehicle movement is a projected representation of GHOSTWHEEL snapshots, NOT real-world actuation or an independent physics/collision model.",
+  "runtimeSurface": "GHOSTWHEEL React/Vite browser Operations; optional Windows Tauri viewer after separately gated runtime approval",
+  "boundsMeters": [
+    36,
+    24,
+    8
+  ],
+  "hero": {
+    "id": "fictional-ev-projection",
+    "role": "Single projected ASTER/VECTOR/NOMAD teaching vehicle. Grounded to a protected central simulation plane; full initial silhouette visible from production camera.",
+    "reservedBoundsMeters": [
+      16,
+      12,
+      3
+    ]
+  },
+  "symmetry": {
+    "mode": "bilateral",
+    "order": 2,
+    "appliesTo": [
+      "architecture",
+      "barriers",
+      "circulation",
+      "repeatedProps"
+    ],
+    "exceptions": [
+      "Event chronology advances left-to-right in UI overlay for reading order; this overlay is not architectural geometry."
+    ]
+  },
+  "circulation": {
+    "description": "Human spectators enter from the south via 3.6 m clear aperture; keep 2.4 m unobstructed routes around the central projection. The virtual car is a non-colliding holographic data display, not a driveable room collision actor. Never pretend the existing simulator implements boundaries or stopping distances.",
+    "minimumClearanceMeters": 2.4
+  },
+  "productionCamera": {
+    "viewport": [
+      1600,
+      900
+    ],
+    "location": [
+      0,
+      -16,
+      6.5
+    ],
+    "target": [
+      0,
+      0,
+      1.3
+    ],
+    "verticalFovDegrees": 55
+  },
+  "performanceBudget": {
+    "maxSceneTriangles": 120000,
+    "maxVLowBytes": 6000000,
+    "maxHighTextureBytes": 16000000
+  },
+  "creditBudget": {
+    "maximumCredits": 0,
+    "approvalRequired": true
+  },
+  "environment": {
+    "type": "none",
+    "identity": "",
+    "source": "",
+    "assignmentKey": ""
+  },
+  "artifacts": {
+    "floorPlan": "plans/concept-floorplan.svg",
+    "reflectedCeilingPlan": "plans/concept-reflected-ceiling.svg",
+    "planMetadata": "plan-metadata.json",
+    "wallElevations": [],
+    "visualTarget": "VISUAL-TARGET.md",
+    "openingContactSheet": "masks/primary-arrival-concept.svg"
+  }
+}

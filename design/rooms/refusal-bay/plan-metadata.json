@@ -1,0 +1,15 @@
+{
+  "schema": "game-room.plan-metadata.v1",
+  "roomId": "ghostwheel-refusal-bay",
+  "style": "monochrome-engineering",
+  "projectionSource": "actual-meshes",
+  "layers": [
+    "lower-room",
+    "reflected-ceiling"
+  ],
+  "semanticLabelsOutsideImage": true,
+  "aiInspirationIncluded": false,
+  "aiInspirationReason": "",
+  "coverage": [],
+  "status": "NOT EVIDENCE: template placeholder. No mesh-derived plan exists; concept SVGs cannot count toward Function approval."
+}

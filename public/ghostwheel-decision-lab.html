@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0a1015">
+  <meta name="description" content="What happens when a simulated car refuses to obey? Explore GHOSTWHEEL's authorization gateway, virtual vehicle responses, and replay evidence in an interactive decision diagram.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="GHOSTWHEEL | The command is simple. The decision isn't.">
+  <meta property="og:description" content="Choose a command. Trace the gateway's decision. See what the virtual car does next.">
+  <meta property="og:url" content="https://ghostwheel-one.vercel.app/ghostwheel-decision-lab.html">
+  <meta name="twitter:card" content="summary_large_image">
+  <title>GHOSTWHEEL | Anatomy of a Decision</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <style>
+    :root{color-scheme:dark;--bg:#091016;--paper:#111b21;--paper2:#142129;--hair:#34505a;--ink:#f6f0e7;--muted:#a9b9bd;--orange:#eeae72;--mint:#6fe2c3;--red:#ff857c;--state:var(--red)}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font-family:Arial,Helvetica,sans-serif;overflow-x:hidden}body[data-verdict="pass"]{--state:var(--mint)}body::before{content:"";position:fixed;inset:0;background:radial-gradient(ellipse at 80% 8%,#1b3e40aa,transparent 43%),radial-gradient(ellipse at 5% 65%,#48332844,transparent 48%);pointer-events:none;z-index:-1}
+    a{color:inherit}button{font:inherit}button:focus-visible,a:focus-visible{outline:3px solid #f4d6a3;outline-offset:4px}button{cursor:pointer} .wrap{max-width:1440px;margin:0 auto;padding:0 clamp(18px,4.5vw,64px)}
+    .topbar{display:flex;align-items:center;justify-content:space-between;gap:20px;border-bottom:1px solid #39515970;padding:20px 0}.brand{display:flex;align-items:center;gap:13px;text-decoration:none;font-size:15px;font-weight:900;letter-spacing:.2em}.mark{width:33px;height:33px;flex:none}.brand small{font:10px 'Courier New',monospace;color:var(--orange);letter-spacing:.05em;align-self:end;padding-bottom:2px}.barlinks{display:flex;gap:12px;align-items:center}.navlink{font-size:12px;text-transform:uppercase;letter-spacing:.14em;text-decoration:none;border:1px solid #4c6971;padding:12px 15px;border-radius:4px;transition:.2s;background:#14232b}.navlink:hover{border-color:var(--orange);background:#1c3038}.navlink.primary{background:var(--orange);border-color:var(--orange);color:#182028;font-weight:900}
+    .hero{padding:56px 0 34px;display:grid;grid-template-columns:minmax(0,1.7fr) minmax(190px,.6fr);align-items:end;gap:30px}.eyebrow{font:700 11px 'Courier New',monospace;text-transform:uppercase;letter-spacing:.23em;color:var(--orange)}h1{font-size:clamp(46px,6.8vw,100px);line-height:.92;letter-spacing:-.065em;max-width:1070px;margin:20px 0 22px;font-weight:900}h1 em{font-style:normal;color:var(--orange)}.dek{color:#d3dfe0;font-size:clamp(15px,1.5vw,18px);line-height:1.6;max-width:660px;margin:0}.hero-aside{font:12px/1.85 'Courier New',monospace;color:var(--muted);border-left:2px solid var(--orange);padding-left:18px}.hero-aside b{color:#fff;display:block;font-family:Arial;font-size:22px;letter-spacing:-.03em;margin-bottom:6px}
+    .workbench{margin-top:24px;border:1px solid #3a5860;border-radius:12px;background:linear-gradient(160deg,#14222a,#0c141a 65%);box-shadow:0 20px 70px #02070cb3;overflow:hidden}.workbench-bar{padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:1px solid #31464f;background:#101c23}.workbench-title{font:700 12px 'Courier New',monospace;letter-spacing:.12em;color:#d2dddc}.workbench-title span{color:var(--orange)}.live-label{display:flex;gap:9px;align-items:center;color:var(--muted);font:11px 'Courier New',monospace}.live-led{width:8px;height:8px;border-radius:50%;background:var(--mint);box-shadow:0 0 14px #6fe2c377}.choose-area{padding:26px 26px 14px;display:grid;gap:13px}.choose-label{font-size:11px;color:#adbcc1;letter-spacing:.2em;text-transform:uppercase;font-weight:bold}.scenarios{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px}.scenario{min-width:0;min-height:70px;border:1px solid #415a65;background:#172630;color:#dce7e5;text-align:left;border-radius:7px;padding:11px 12px;transition:background .16s,border .16s,transform .16s}.scenario:hover{background:#20333e;transform:translateY(-2px)}.scenario[aria-pressed="true"]{border-color:var(--orange);background:#352922;box-shadow:inset 0 3px 0 var(--orange)}.scenario .num{display:block;color:#c99c76;font:11px 'Courier New',monospace;margin-bottom:7px}.scenario .name{font-weight:800;line-height:1.25;font-size:13px}
+    .diagram{padding:10px 26px 24px}.diagram-grid{display:grid;grid-template-columns:minmax(0,1fr) 29px minmax(0,1.22fr) 29px minmax(0,.82fr) 29px minmax(0,1.18fr);align-items:stretch;gap:0}.node{position:relative;min-width:0;min-height:305px;padding:20px 18px;border:1px solid #405762;background:#101c24;border-radius:8px;display:flex;flex-direction:column;overflow:hidden}.node:before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:var(--orange);opacity:.8}.node-number{font:700 11px 'Courier New',monospace;letter-spacing:.17em;color:#e7b488}.node h2{font-size:clamp(17px,1.6vw,23px);letter-spacing:-.045em;margin:12px 0 7px;line-height:1.1}.node .sub{font:12px/1.55 'Courier New',monospace;color:#b8c4c4;margin:0}.node .mono-value{font:700 16px/1.3 'Courier New',monospace;color:#fff;margin-top:26px;overflow-wrap:anywhere}.node .foot{font-size:12px;line-height:1.5;color:#aebdc2;margin-top:auto;padding-top:17px}.arrow{display:flex;align-items:center;justify-content:center;position:relative}.arrow:before{content:"";width:100%;height:1.5px;background:var(--orange)}.arrow:after{content:"";position:absolute;right:0;width:7px;height:7px;border-right:2px solid var(--orange);border-top:2px solid var(--orange);transform:rotate(45deg)}
+    .checks{display:grid;gap:9px;margin-top:20px}.check{display:flex;align-items:center;justify-content:space-between;gap:5px;padding:7px 9px;background:#1b2e37;border:1px solid #2e4a56;border-radius:5px;font:11px 'Courier New',monospace;color:#e2e7e5}.check .marker{width:9px;height:9px;border-radius:50%;flex:none;background:var(--mint)}.check.failed{border-color:#b76a62;background:#392529}.check.failed .marker{background:var(--red);box-shadow:0 0 13px #ff857c88}.check.neutral .marker{background:#63757e}.check.neutral{opacity:.72}.check b{font-size:10px;color:#c6d6d9;letter-spacing:.03em;font-weight:normal;margin-left:auto}.check.failed b{color:#ffb4aa}
+    .verdict-node{text-align:center;align-items:center;justify-content:space-between}.verdict-node:before{background:var(--state)}.verdict-overline{font:10px 'Courier New',monospace;color:#abbcc1;letter-spacing:.06em}.status-ring{border:2px solid var(--state);width:120px;height:120px;border-radius:50%;display:grid;place-items:center;color:var(--state);position:relative;margin:14px 0 6px;box-shadow:0 0 34px #f77d7118}.status-ring:before,.status-ring:after{content:"";position:absolute;border:1px solid var(--state);border-radius:50%;inset:9px;opacity:.3}.status-ring:after{inset:-9px;border-style:dashed;opacity:.2}.status-ring svg{width:57px;height:57px}.verdict-word{font-size:clamp(15px,1.6vw,21px);font-weight:900;letter-spacing:-.02em;line-height:1.15;color:var(--state);overflow-wrap:anywhere}.reason{font:12px/1.4 'Courier New',monospace;color:#d4dcdb;margin:12px 0 0;overflow-wrap:anywhere}
+    .vehicle-node:before{background:var(--state)}.vehicle-art{display:flex;align-items:center;min-height:105px;position:relative}.vehicle-art svg{width:100%;max-width:250px}.motion{stroke:var(--state);stroke-width:2;fill:none;stroke-dasharray:5 7;opacity:.84;animation:dash 3s linear infinite}.modelled-car{transition:opacity .3s;opacity:1}body[data-verdict="reject"] .modelled-car{opacity:.53}body[data-verdict="reject"] .motion{animation:none;opacity:.3}@keyframes dash{to{stroke-dashoffset:-60}}@media(prefers-reduced-motion:reduce){.motion{animation:none}.scenario{transition:none}.scenario:hover{transform:none}}
+    .result-pill{border-left:3px solid var(--state);background:#172932;padding:12px 12px;margin-top:5px;font-size:12px;line-height:1.55;color:#d7e4e3;min-height:79px}.boundary{display:flex;align-items:center;gap:15px;margin-top:18px;color:#abbfbe;font:10px/1.5 'Courier New',monospace;letter-spacing:.1em;text-transform:uppercase}.boundary:before,.boundary:after{content:"";height:1px;background:#49616a;flex:1}.boundary strong{color:var(--orange)}.ledger{display:grid;grid-template-columns:minmax(0,1fr) 1.15fr;gap:18px;padding:22px 26px;border-top:1px solid #334a54;background:#0c161c}.ledger h3,.details h3{font-size:11px;letter-spacing:.17em;text-transform:uppercase;color:var(--orange);margin:0 0 13px}.ledger-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.ledger .evidence{font:12px/1.7 'Courier New',monospace;color:#d3dddd}.ledger .evidence div{padding:3px 0}.ledger .evidence span{color:var(--muted);padding-right:13px}.ledger .evidence .event-status{color:var(--state)}.evidence-copy{font-size:14px;line-height:1.6;color:#b5c9cc;margin:0}.toolrow{display:flex;gap:9px;flex-wrap:wrap;margin-top:16px}.smallbtn{border:1px solid #58727d;color:#e3eeeb;background:#172a34;padding:10px 13px;border-radius:4px;font-size:12px;font-weight:700}.smallbtn:hover{border-color:var(--orange)}
+    .under{display:flex;align-items:center;justify-content:space-between;gap:22px;padding:33px 0 24px}.under h2{font-size:clamp(25px,3.4vw,42px);letter-spacing:-.05em;margin:0 0 7px}.under p{font-size:13px;line-height:1.6;color:var(--muted);max-width:670px;margin:0}.vehicle-switch{display:flex;gap:6px;flex-wrap:wrap}.model-btn{border:1px solid #53727a;border-radius:4px;background:#15252d;padding:12px 17px;color:#c2d4d8;font:700 12px 'Courier New',monospace}.model-btn[aria-pressed="true"]{color:#101820;background:var(--orange);border-color:var(--orange)}
+    .details{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;padding-bottom:50px}.detail{border-top:1px solid #526a6d;padding:23px 0}.detail h3{margin-bottom:10px;color:#c3d5d2}.detail b{font-size:20px;letter-spacing:-.03em}.detail p{font-size:13px;line-height:1.6;color:#aebfc3;max-width:360px}.detail .detail-num{font:11px 'Courier New',monospace;color:var(--orange);margin-bottom:16px}.footer{border-top:1px solid #34464b;display:flex;align-items:center;justify-content:space-between;gap:15px;padding:25px 0 35px;color:#a6b6b8;font:11px/1.5 'Courier New',monospace}.footer a{color:var(--orange)}
+    @media(max-width:1120px){.diagram-grid{grid-template-columns:minmax(0,1fr) 18px minmax(0,1.1fr) 18px minmax(0,1fr) 18px minmax(0,1.1fr)}.node{padding:15px 11px;min-height:345px}.scenario{padding:10px}.scenario .name{font-size:12px}.check{padding:7px 5px;font-size:10px}.status-ring{width:90px;height:90px}.status-ring svg{width:44px;height:44px}}
+    @media(max-width:800px){.hero{grid-template-columns:1fr;padding-top:35px}.hero-aside{display:none}h1{font-size:clamp(47px,9.6vw,75px)}.scenarios{grid-template-columns:repeat(2,minmax(0,1fr))}.scenario{min-height:62px}.diagram-grid{grid-template-columns:1fr;gap:0}.node{min-height:0;padding:17px 18px}.arrow{height:26px}.arrow:before{height:100%;width:1.5px}.arrow:after{right:auto;bottom:1px;transform:rotate(135deg)}.node h2{font-size:22px}.node .foot{margin-top:14px}.node .mono-value{margin-top:15px}.checks{grid-template-columns:repeat(2,minmax(0,1fr));margin-top:14px}.check{font-size:10px}.verdict-node{gap:8px}.status-ring{margin:9px 0;width:86px;height:86px}.vehicle-art{min-height:70px}.vehicle-art svg{max-width:220px}.ledger{grid-template-columns:1fr}.under{flex-direction:column;align-items:flex-start}.details{grid-template-columns:1fr}.detail{padding:15px 0}.detail p{max-width:none}.boundary{font-size:9px;text-align:center}.barlinks .secondary-link{display:none}}
+    @media(max-width:470px){.topbar{padding:13px 0}.brand{font-size:12px;letter-spacing:.12em}.brand small{display:none}.navlink{font-size:10px;padding:11px}.workbench-bar{padding:14px}.live-label{font-size:9px}.choose-area{padding:15px}.diagram{padding:8px 15px 20px}.scenario{min-height:67px}.ledger{padding:20px 15px}.checks{grid-template-columns:1fr}.footer{display:block}.footer a{display:inline-block;margin-top:14px}}
+  </style>
+</head>
+<body data-verdict="reject">
+  <div class="wrap">
+    <header class="topbar">
+      <a class="brand" href="https://github.com/topherchris420/ghostwheel" aria-label="GHOSTWHEEL on GitHub">
+        <svg class="mark" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="10" fill="#10161b"/><circle cx="32" cy="32" r="21" stroke="#eeae72" stroke-width="3" fill="none"/><path d="M11 32h42M32 11v42M18 18l28 28M46 18L18 46" stroke="#eeae72" stroke-width="2"/><circle cx="32" cy="32" r="8" fill="#10161b" stroke="#eeae72" stroke-width="2"/></svg>
+        GHOSTWHEEL <small>GW-01</small>
+      </a>
+      <nav class="barlinks" aria-label="Project links">
+        <a class="navlink secondary-link" href="https://github.com/topherchris420/ghostwheel" target="_blank" rel="noopener noreferrer">View source ↗</a>
+        <a class="navlink primary" href="https://ghostwheel-one.vercel.app/" target="_blank" rel="noopener noreferrer">Drive the simulation ↗</a>
+      </nav>
+    </header>
+    <main>
+      <section class="hero" aria-labelledby="hero-title">
+        <div>
+          <div class="eyebrow">AUTOMOTIVE CYBERSECURITY · INTERACTIVE RESEARCH LAB</div>
+          <h1 id="hero-title">WHAT HAPPENS WHEN A CAR <em>REFUSES</em> TO OBEY?</h1>
+          <p class="dek">Every digital command asks a question. GHOSTWHEEL makes the invisible decision visible: who sent it, whether it is valid, what the virtual vehicle does, and what the evidence remembers.</p>
+        </div>
+        <aside class="hero-aside"><b>YOUR MOVE.</b>Choose an input below.<br>Trace the decision.<br>Follow the recorded consequence.<br><br>100% fictional vehicles.<br>0 physical actuation.</aside>
+      </section>
+      <section class="workbench" aria-label="Interactive GHOSTWHEEL decision diagram">
+        <div class="workbench-bar"><div class="workbench-title"><span>01 / </span>THE DECISION ENGINE</div><div class="live-label"><span class="live-led" aria-hidden="true"></span> INTERACTIVE EXPLAINER · NOT A LIVE SIMULATION</div></div>
+        <div class="choose-area">
+          <div class="choose-label">Choose what the virtual vehicle receives</div>
+          <div class="scenarios" role="group" aria-label="Example command scenarios">
+            <button type="button" class="scenario" data-scenario="valid" aria-pressed="false"><span class="num">SCENARIO 01</span><span class="name">Authorized turn</span></button>
+            <button type="button" class="scenario" data-scenario="replay" aria-pressed="true"><span class="num">SCENARIO 02</span><span class="name">Duplicate command</span></button>
+            <button type="button" class="scenario" data-scenario="pedals" aria-pressed="false"><span class="num">SCENARIO 03</span><span class="name">Conflicting pedals</span></button>
+            <button type="button" class="scenario" data-scenario="stale" aria-pressed="false"><span class="num">SCENARIO 04</span><span class="name">Stale timestamp</span></button>
+            <button type="button" class="scenario" data-scenario="heartbeat" aria-pressed="false"><span class="num">SCENARIO 05</span><span class="name">Missing heartbeat</span></button>
+          </div>
+        </div>
+        <div class="diagram">
+          <div class="diagram-grid">
+            <article class="node">
+              <div class="node-number">01 / INPUT</div>
+              <h2>Operator command</h2>
+              <p class="sub">Example request inside a simulated driving session</p>
+              <div class="mono-value" id="request-title">Sequence already used</div>
+              <p class="foot" id="request-sub">A previously seen sequence number arrives again.</p>
+            </article>
+            <div class="arrow" aria-hidden="true"></div>
+            <article class="node">
+              <div class="node-number">02 / VALIDATION</div>
+              <h2>Authorization gateway</h2>
+              <p class="sub">A command does not reach the model merely because it was received.</p>
+              <div class="checks" id="checks" aria-label="Validation checks"></div>
+              <p class="foot">Rules illustrated from the GHOSTWHEEL simulator, not an OEM security system.</p>
+            </article>
+            <div class="arrow" aria-hidden="true"></div>
+            <article class="node verdict-node" aria-live="polite" aria-atomic="true">
+              <div><div class="node-number">03 / VERDICT</div><h2>Decision</h2></div>
+              <div class="status-ring" aria-hidden="true"><svg id="verdict-icon" viewBox="0 0 64 64"><path d="M19 19 L45 45 M45 19 L19 45" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/></svg></div>
+              <div class="verdict-word" id="verdict-text">REJECTED</div>
+              <p class="reason" id="reason">replayed_sequence</p>
+            </article>
+            <div class="arrow" aria-hidden="true"></div>
+            <article class="node vehicle-node">
+              <div class="node-number">04 / CONSEQUENCE</div>
+              <h2>Virtual vehicle</h2>
+              <p class="sub" id="vehicle-sub">ASTER · central gateway · 2.65 m wheelbase</p>
+              <div class="vehicle-art" aria-hidden="true">
+                <svg viewBox="0 0 280 120">
+                  <path d="M8 100 Q70 97 127 81 Q198 66 271 68" class="motion"/>
+                  <g class="modelled-car">
+                    <path d="M40 77 L58 77 L83 46 Q95 37 112 37 L174 37 Q187 37 196 49 L214 72 L232 76 Q238 78 240 87 L240 99 L29 99 L29 89 Q31 79 40 77" fill="#213844" stroke="#d3dfe1" stroke-width="2"/>
+                    <path d="M91 47 L111 46 L167 46 Q175 46 181 54 L192 71 L79 71 Z" fill="#417381" stroke="#bddee1" stroke-width="1.5"/>
+                    <path d="M135 46 V71" stroke="#bcdfe1" stroke-width="2"/>
+                    <circle cx="81" cy="98" r="17" fill="#0c141a" stroke="#e5b286" stroke-width="4"/><circle cx="81" cy="98" r="6" fill="#b0c4ca"/>
+                    <circle cx="200" cy="98" r="17" fill="#0c141a" stroke="#e5b286" stroke-width="4"/><circle cx="200" cy="98" r="6" fill="#b0c4ca"/>
+                    <path d="M34 83 L47 82 M220 80 L236 83" stroke="#eeae72" stroke-width="3"/>
+                  </g>
+                </svg>
+              </div>
+              <div class="result-pill" id="consequence">No new modeled steering actuation. Rejection is recorded.</div>
+            </article>
+          </div>
+          <div class="boundary"><span>HARD BOUNDARY</span><strong>SIMULATED ACTUATION ONLY · NO PHYSICAL VEHICLE COMMANDS</strong><span>GW-01</span></div>
+        </div>
+        <div class="ledger">
+          <div>
+            <div class="ledger-head"><h3>Event trail / what remains</h3><span class="live-label">EXAMPLE TRACE</span></div>
+            <div class="evidence" aria-live="polite" aria-atomic="true">
+              <div><span>01 //</span> <span id="log1" style="color:#d3dddd">Command received</span></div>
+              <div><span>02 //</span> <span id="log2" style="color:#d3dddd">Sequence check failed</span></div>
+              <div><span>03 //</span> <span id="log3" class="event-status">Rejected: replayed_sequence</span></div>
+              <div><span>04 //</span> <span id="log4" style="color:#d3dddd">Event available for investigation</span></div>
+            </div>
+          </div>
+          <div>
+            <h3>Investigate, don't just trust a green light.</h3>
+            <p class="evidence-copy" id="evidence-copy">GHOSTWHEEL exposes decision reasons, synthetic telemetry and event history. The actual lab supports local recorded sessions, forensic replay and evidence exports. This page illustrates the decision logic; it does not run the simulator.</p>
+            <div class="toolrow"><button class="smallbtn" id="copy-config" type="button">Copy this scenario link</button><a class="smallbtn" href="https://ghostwheel-one.vercel.app/" target="_blank" rel="noopener noreferrer">Try it in GHOSTWHEEL ↗</a></div>
+          </div>
+        </div>
+      </section>
+      <section class="under" aria-label="Vehicle teaching architectures">
+        <div><div class="eyebrow">THREE VEHICLES · THREE TEACHING ARCHITECTURES</div><h2>Change the vehicle. Repeat the question.</h2><p>The same gateway concepts can be investigated across fictional vehicle models. These are simplified teaching profiles, not real-world vehicle replicas.</p></div>
+        <div class="vehicle-switch" role="group" aria-label="Choose fictional vehicle"><button type="button" class="model-btn" data-vehicle="aster" aria-pressed="true">ASTER</button><button type="button" class="model-btn" data-vehicle="vector" aria-pressed="false">VECTOR</button><button type="button" class="model-btn" data-vehicle="nomad" aria-pressed="false">NOMAD</button></div>
+      </section>
+      <section class="details" aria-label="Three project highlights">
+        <div class="detail"><div class="detail-num">01 / GET BEHIND THE WHEEL</div><h3>BROWSER FIRST</h3><b>Drive a fictional EV.</b><p>No account, vehicle adapter, or hardware. Use keyboard controls to explore the consequences of simulated commands.</p></div>
+        <div class="detail"><div class="detail-num">02 / BREAK ASSUMPTIONS</div><h3>RESEARCH LAB</h3><b>Challenge the safeguards.</b><p>Run seeded invalid-command scenarios on ASTER, VECTOR and NOMAD. Inspect modeled outcomes and research metrics.</p></div>
+        <div class="detail"><div class="detail-num">03 / FOLLOW THE PROOF</div><h3>FORENSIC REPLAY</h3><b>Inspect the evidence.</b><p>Revisit recorded sessions and export event ledgers. A checked hash chain helps with integrity, not independent provenance.</p></div>
+      </section>
+    </main>
+    <footer class="footer"><div>GHOSTWHEEL GW-01 · OPEN-SOURCE AUTOMOTIVE CYBERSECURITY EDUCATION<br>This interactive diagram uses documented example rules, not a live simulator or a safety claim.</div><a href="https://github.com/topherchris420/ghostwheel" target="_blank" rel="noopener noreferrer">github.com/topherchris420/ghostwheel ↗</a></footer>
+  </div>
+  <script src="./ghostwheel-decision-lab.js" defer></script>
+</body>
+</html>

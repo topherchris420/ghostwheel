@@ -14,8 +14,10 @@
 <p align="center">
   <a href="https://ghostwheel-one.vercel.app"><strong>LAUNCH GHOSTWHEEL ↗</strong></a>
   &nbsp;·&nbsp;
+  <a href="https://ghostwheel-one.vercel.app/ghostwheel-fourier-epicycles.html">Fourier animation</a>
   &nbsp;·&nbsp;
-  <a href="https://ghostwheel-one.vercel.app/ghostwheel-decision-lab.html">Interactive diagram</a>
+  <a href="https://ghostwheel-one.vercel.app/ghostwheel-decision-lab.html">Decision lab</a>
+  &nbsp;·&nbsp;
   <a href="#your-first-investigation">First five minutes</a>
   &nbsp;·&nbsp;
   <a href="#inside-the-machine">How it works</a>
@@ -29,6 +31,26 @@
 
 > [!IMPORTANT]
 > **This is not a real-vehicle controller.** The web and desktop apps cannot steer, accelerate, or brake physical vehicles. A separate, optional ROS 2 package supports **autoware actuation** or **passive, authorized vehicle observation**. Its PACMod3 observer does not issue drive-by-wire commands or perform a physical emergency stop.
+
+## The car, drawn by mathematics
+
+**Forty-two rotating vectors. One virtual electric vehicle. One security decision.**
+
+Fourier epicycles reconstruct the fictional **ASTER** silhouette from a sampled vehicle contour. Then the story shifts from mathematics to GHOSTWHEEL's command security pipeline: a fresh, authorized steering request can reach a simulated actuator, while a replayed sequence is rejected, requests a **virtual safe state**, and leaves a forensic event.
+
+<a href="https://ghostwheel-one.vercel.app/ghostwheel-fourier-epicycles.html">
+  <img src="docs/marketing/ghostwheel-fourier-epicycles.svg" alt="Animated Fourier epicycles reconstructing fictional ASTER, beside a simulation-only pipeline for accepted and replayed steering commands, gateway decisions, virtual safe state, and recorded evidence." width="100%">
+</a>
+
+<p align="center">
+  <a href="https://ghostwheel-one.vercel.app/ghostwheel-fourier-epicycles.html"><strong>PLAY THE INTERACTIVE FOURIER EXPERIENCE ↗</strong></a>
+  &nbsp;·&nbsp;
+  <a href="public/ghostwheel-fourier-epicycles.html">View standalone page source</a>
+</p>
+
+Use the interactive campaign to **play, pause, scrub, compare accepted and rejected commands, and save a frame**. The motion is produced from a discrete Fourier transform of a stylized vehicle contour. This is a cinematic explanation of documented, fictional simulation rules, not an instrument connected to the running simulator or a real car.
+
+---
 
 ## Explore the invisible decision
 

@@ -1,0 +1,80 @@
+(() => {
+ 'use strict';
+ const cv=document.getElementById('scene'),ctx=cv.getContext('2d');
+ const W=1280,H=720,TWO=Math.PI*2;
+ const COLOR={copper:'#e9a165',cyan:'#65d6cc',red:'#f4816f',white:'#f6f6f0',muted:'#9babb7'};
+ const vertices=[[-267,34],[-274,21],[-272,2],[-260,-12],[-232,-17],[-184,-24],[-141,-60],[-100,-86],[-55,-96],[20,-98],[83,-91],[124,-69],[161,-44],[223,-32],[251,-21],[267,-4],[271,17],[259,34],[211,39],[164,39],[102,41],[11,41],[-96,41],[-179,41],[-230,39]];
+ const samples=384;
+ const lengths=[]; let total=0;
+ for(let i=0;i<vertices.length;i++){let a=vertices[i],b=vertices[(i+1)%vertices.length];total+=Math.hypot(b[0]-a[0],b[1]-a[1]);lengths.push(total)}
+ const outline=[];
+ for(let i=0;i<samples;i++){
+    const at=total*i/samples; let j=0;while(at>lengths[j])j++;
+    const a=vertices[j],b=vertices[(j+1)%vertices.length],prev=j?lengths[j-1]:0,u=(at-prev)/(lengths[j]-prev);
+    outline.push([a[0]+(b[0]-a[0])*u,a[1]+(b[1]-a[1])*u]);
+ }
+ // Explicit DFT: C_k=(1/N) sum(z_n exp(-i*2*pi*k*n/N)); c_k are complex vectors.
+ const coefficients=[];
+ for(let k=-28;k<=28;k++){
+    let re=0,im=0;
+    outline.forEach(([x,y],n)=>{let a=-TWO*k*n/samples;re+=x*Math.cos(a)-y*Math.sin(a);im+=x*Math.sin(a)+y*Math.cos(a)});
+    coefficients.push({k,re:re/samples,im:im/samples,mag:Math.hypot(re,im)/samples});
+ }
+ coefficients.sort((a,b)=>b.mag-a.mag);
+ const terms=coefficients.slice(0,42);
+ function point(u){let x=0,y=0;for(const a of terms){const ph=TWO*a.k*u,c=Math.cos(ph),s=Math.sin(ph);x+=a.re*c-a.im*s;y+=a.re*s+a.im*c;}return [404+x*1.08,410+y*1.08]}
+ const contour=Array.from({length:1200},(_,i)=>point(i/1200));
+ const cl=(v,a=0,b=1)=>Math.max(a,Math.min(b,v)), sm=(v)=>{v=cl(v);return v*v*(3-2*v)};
+ function rect(x,y,w,h,r=12,fill='#101d28',stroke='#425464'){ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=1;ctx.stroke()}}
+ function text(s,x,y,size=20,color=COLOR.white,weight=500,mono=false,align='left'){ctx.font=`${weight} ${size}px ${mono?'monospace':'Inter,Arial,sans-serif'}`;ctx.fillStyle=color;ctx.textAlign=align;ctx.fillText(s,x,y)}
+ function stroke(points,color,width=2){if(points.length<2)return;ctx.beginPath();ctx.moveTo(points[0][0],points[0][1]);for(let i=1;i<points.length;i++)ctx.lineTo(points[i][0],points[i][1]);ctx.strokeStyle=color;ctx.lineWidth=width;ctx.stroke()}
+ function circ(x,y,r,color,w=2){ctx.beginPath();ctx.arc(x,y,r,0,TWO);ctx.lineWidth=w;ctx.strokeStyle=color;ctx.stroke()}
+ function brand(x,y,r=21){circ(x,y,r,COLOR.copper,3);ctx.strokeStyle=COLOR.copper;ctx.lineWidth=1.8;for(let a=0;a<4;a++){let th=a*Math.PI/4;ctx.beginPath();ctx.moveTo(x-r*Math.cos(th),y-r*Math.sin(th));ctx.lineTo(x+r*Math.cos(th),y+r*Math.sin(th));ctx.stroke()}circ(x,y,r*.3,COLOR.copper,2)}
+ function glow(x,y,color){const g=ctx.createRadialGradient(x,y,1,x,y,22);g.addColorStop(0,color+'b0');g.addColorStop(1,color+'00');ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,22,0,TWO);ctx.fill();ctx.fillStyle=color;ctx.beginPath();ctx.arc(x,y,3.5,0,TWO);ctx.fill()}
+ function draw(t){
+   const bg=ctx.createLinearGradient(0,0,W,H);bg.addColorStop(0,'#0a121b');bg.addColorStop(.55,'#10202a');bg.addColorStop(1,'#171a20');ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+   ctx.strokeStyle='#7893a511';ctx.lineWidth=1;for(let x=54;x<W;x+=38){ctx.beginPath();ctx.moveTo(x,185);ctx.lineTo(x,614);ctx.stroke()}for(let y=198;y<616;y+=38){ctx.beginPath();ctx.moveTo(54,y);ctx.lineTo(1226,y);ctx.stroke()}
+   brand(77,69,21);text('GHOSTWHEEL',116,81,40,COLOR.white,800);text('GW-01 / INTERACTIVE AUTOMOTIVE CYBERSECURITY LAB',117,106,12,COLOR.copper,500,true);text('FOURIER CAMPAIGN / 001',1225,65,13,COLOR.muted,500,true,'right');
+   ctx.strokeStyle='#41535f';ctx.beginPath();ctx.moveTo(58,122);ctx.lineTo(1225,122);ctx.stroke();
+   text(t<13.7?'WHAT HAPPENS WHEN A CAR REFUSES TO OBEY?':"THE COMMAND IS SIMPLE. THE DECISION ISN'T.",58,175,32,COLOR.white,750);
+   rect(50,199,739,413,16,'#0b151ecc','#435667');rect(808,199,423,413,16,'#0c1720e9','#435667');
+   text('FIG. 01',76,235,14,COLOR.copper,500,true);text('SIGNAL → SHAPE',163,235,14,COLOR.muted,500,true);text('N=2048',759,235,13,COLOR.muted,500,true,'right');
+   ctx.strokeStyle='#536e7c77';ctx.beginPath();ctx.moveTo(103,494);ctx.lineTo(742,494);ctx.stroke();
+   const wf=sm((t-3.8)/1.7);
+   for(const x of [404-166*1.08,404+166*1.08]){const y=410+40*1.08;if(wf>0){ctx.globalAlpha=wf;circ(x,y,44,COLOR.white,4);circ(x,y,32,COLOR.cyan,2);circ(x,y,12,COLOR.copper,3);for(let a=0;a<8;a++){let th=a*Math.PI/4+t*.3;stroke([[x+16*Math.cos(th),y+16*Math.sin(th)],[x+30*Math.cos(th),y+30*Math.sin(th)]],COLOR.cyan,1)}ctx.globalAlpha=1}}
+   const p=sm(t/5.2),n=Math.max(2,Math.min(1200,Math.round(p*1200)));
+   if(t<5.5){stroke(contour.slice(0,n),'#65d6cc52',8);stroke(contour.slice(0,n),COLOR.copper,3)}else{stroke([...contour,contour[0]],COLOR.copper,2.5)}
+   const v=sm((t-4.45)/1);if(v>0){ctx.globalAlpha=v;const tp=(coords)=>coords.map(([x,y])=>[404+1.08*x,410+1.08*y]);stroke(tp([[-115,-62],[-69,-78],[23,-80],[81,-73],[116,-51]]),COLOR.cyan,2);stroke(tp([[-7,-79],[-9,-34]]),COLOR.cyan,2);stroke(tp([[-122,-51],[-145,-25],[-195,-20]]),'#a6bdc8',2);stroke(tp([[126,-47],[160,-30],[215,-26]]),'#a6bdc8',2);stroke(tp([[-115,-15],[122,-15]]),'#487c83',1);ctx.globalAlpha=1}
+   if(t<6.9){const u=sm(cl(t/5.2));let x=404,y=410,opa=1-sm((t-4.9)/2);terms.forEach((a,i)=>{const ph=TWO*a.k*u,c=Math.cos(ph),s=Math.sin(ph),vx=1.08*(a.re*c-a.im*s),vy=1.08*(a.re*s+a.im*c);const nx=x+vx,ny=y+vy;if(i){ctx.globalAlpha=opa*Math.pow(.75,i/14);if(a.mag>1.3)circ(x,y,a.mag*1.08,'#83b9bc',1);stroke([[x,y],[nx,ny]],'#edb083',i<8?2:1)}x=nx;y=ny});ctx.globalAlpha=1;if(opa>.05)glow(...point(u),COLOR.copper)}
+   text('ASTER / COMPACT EV',76,572,19,COLOR.white,750);text('Fictional model · Fourier reconstruction',76,595,14,COLOR.muted);
+   if(t<5.5){text(`${Math.round(p*100)}%`,748,583,27,COLOR.copper,500,true,'right');text('CONTOUR TRACED',748,599,11,COLOR.muted,500,true,'right')}
+   else{text(t<9.25?'ACCEPTED':'SAFE STATE',748,576,19,t<9.25?COLOR.cyan:COLOR.red,500,true,'right');text(t<9.25?'SIMULATED STEER':'REPLAY BLOCKED',748,598,11,COLOR.muted,500,true,'right')}
+   text('COMMAND SECURITY PIPELINE',831,235,14,COLOR.copper,500,true);
+   const starts=[248,325,402,479];starts.forEach((y,i)=>{rect(826,y,386,i===3?81:68,10,'#182630','#3b505d');text(String(i+1).padStart(2,'0'),844,y+23,13,COLOR.copper,500,true)});
+   text('INPUT / STEERING',886,272,13,COLOR.muted,500,true);text('steer +8.0°  •  seq 041',885,301,21,t<8.8?COLOR.white:COLOR.red,600);
+   text('AUTHORIZATION GATE',886,348,13,COLOR.muted,500,true);
+   text(t<5.2?'INSPECTING':t<9.25?'AUTHORIZED':'REJECTED',885,377,22,t<5.2?COLOR.muted:t<9.25?COLOR.cyan:COLOR.red,750);
+   text(t<5.2?'···':t<9.25?'PASS':'FAIL',1179,377,16,t<9.25?COLOR.cyan:COLOR.red,500,true,'right');
+   text('VIRTUAL ACTUATION',886,425,13,COLOR.muted,500,true);text(t<5.2?'Awaiting verdict':t<9.25?'Modeled steering responds':'Safe state requested',885,452,18,COLOR.white,600);
+   text('FORENSIC EVIDENCE',886,501,13,COLOR.muted,500,true);text(t<11.2?'Synthetic session event':'replayed_sequence',885,528,18,t<11.2?COLOR.white:COLOR.red,600);
+   stroke([[846,548],[1190,548]],'#526674',1);stroke([[846,548],[846+344*cl((t-3.5)/8),548]],t>9.25?COLOR.red:t>5.2?COLOR.cyan:COLOR.copper,3);
+   if(t>5.2&&t<10.1)glow(766+50*((t-5.2)*.72%1),405,t<9.25?COLOR.cyan:COLOR.red);
+   stroke([[53,626],[1225,626]],'#435461',1);
+   const headings=[[0,'01 / AN INSTRUCTION BECOMES A SIGNAL'],[4.8,'02 / EVERY REQUEST MEETS A POLICY'],[9.1,'03 / REPLAYS GET REJECTED'],[12.2,'04 / THE DECISION LEAVES EVIDENCE'],[15,'EXPLORE THE INVISIBLE DECISION']];let heading=headings[0][1];headings.forEach(([at,s])=>{if(t>=at)heading=s});text(heading,59,667,20,COLOR.white,750);
+   text('EDUCATIONAL SIMULATION · NO REAL-VEHICLE ACTUATION',59,693,12,COLOR.muted,500,true);
+   text('ghostwheel-one.vercel.app',1224,693,15,COLOR.copper,500,true,'right');
+   [0,4.8,9.1,12.2].forEach((at,i)=>{ctx.fillStyle=t>=at?COLOR.copper:'#4a5a66';ctx.beginPath();ctx.arc(1148+i*25,648,4,0,TWO);ctx.fill()});
+   const finale=sm((t-14.2)/1.3);
+   if(finale>0){ctx.globalAlpha=finale;rect(51,199,1180,413,16,'#0a1018f5',null);circ(1046,400,155,COLOR.copper,2);circ(1046,400,122,COLOR.copper,2);circ(1046,400,85,COLOR.copper,3);for(let a=0;a<8;a++){let th=a*Math.PI/4+t*.2;stroke([[1046-80*Math.cos(th),400-80*Math.sin(th)],[1046+80*Math.cos(th),400+80*Math.sin(th)]],COLOR.copper,1)}circ(1046,400,32,COLOR.copper,3);text('GHOSTWHEEL',94,328,67,COLOR.white,800);text('THE COMMAND IS SIMPLE.',94,382,27,COLOR.copper,750);text("THE DECISION ISN'T.",94,422,27,COLOR.copper,750);stroke([[95,457],[672,457]],'#607382',2);text('DRIVE. CHALLENGE. INVESTIGATE.',94,507,24,COLOR.white,600);text('OPEN SOURCE / BROWSER-FIRST / NO ACCOUNT REQUIRED',94,546,15,COLOR.muted,500,true);ctx.globalAlpha=1}
+ }
+ let playing=!window.matchMedia('(prefers-reduced-motion: reduce)').matches,time=0,prev=0;
+ const playButton=document.getElementById('toggle'),scrub=document.getElementById('scrub'),clock=document.getElementById('clock');
+ const sync=()=>{scrub.value=time;clock.textContent=`00:${String(Math.floor(time)).padStart(2,'0')}`;playButton.textContent=playing?'Pause':'Play'};
+ function tick(now){if(prev&&playing){time+=(now-prev)/1000;if(time>=18)time%=18}prev=now;draw(time);sync();requestAnimationFrame(tick)}
+ playButton.addEventListener('click',()=>{playing=!playing;sync()});
+ document.getElementById('restart').addEventListener('click',()=>{time=0;playing=true;sync()});
+ document.querySelectorAll('[data-jump]').forEach(b=>b.addEventListener('click',()=>{time=Number(b.dataset.jump);playing=true;sync()}));
+ scrub.addEventListener('input',()=>{time=Number(scrub.value);playing=false;draw(time);sync()});
+ document.getElementById('download').addEventListener('click',()=>{let a=document.createElement('a');a.download='ghostwheel-fourier-frame.png';a.href=cv.toDataURL('image/png');a.click()});
+ draw(0);sync();requestAnimationFrame(tick);
+})();

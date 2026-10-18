@@ -1,0 +1,25 @@
+{
+  "schema": "ghostwheel.room-concept-approval.v1",
+  "roomId": "ghostwheel-refusal-bay",
+  "stage": "concept-direction",
+  "decision": "approved",
+  "approvedAt": "2026-10-17",
+  "approvedBy": "project owner (explicit confirmation in ChatGPT conversation)",
+  "source": {
+    "pullRequest": "https://github.com/topherchris420/ghostwheel/pull/9",
+    "response": "yes",
+    "question": "Would you approve The Refusal Bay as GHOSTWHEEL's first 3D environment?"
+  },
+  "scope": [
+    "The Refusal Bay visual and spatial direction",
+    "First 3D environment selection for GHOSTWHEEL",
+    "Advance Function-stage design and reference preparation"
+  ],
+  "notApproved": [
+    "Function gate; needs technical evidence and image approval",
+    "Any Meshy/third-party credit spend or data submission",
+    "Final Blender Form composition",
+    "Runtime publication, deployment or production claims"
+  ],
+  "safetyBoundary": "Simulation-only passive read-only display of existing GHOSTWHEEL snapshots and verdicts. No physical vehicle actuation."
+}

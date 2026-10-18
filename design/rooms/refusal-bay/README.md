@@ -1,6 +1,6 @@
 # GHOSTWHEEL / THE REFUSAL BAY
 
-**Status: FUNCTION CONCEPT DRAFT · NOT APPROVED · NOT DEPLOYED**
+**Status: CONCEPT DIRECTION APPROVED · FUNCTION EVIDENCE PENDING · NOT DEPLOYED**
 
 The command is simple. The spatial consequence isn't.
 
@@ -42,6 +42,8 @@ GHOSTWHEEL's built-in physics does **not** model walls, collision, stopping dist
 | `plan-metadata.json` | schema placeholder, with **zero verified coverage** | BLOCKED |
 | `milestone-reviews.json` | all gates pending; no claimed approval | BLOCKED |
 | `final-report.json` | all checks false, no invented renders or runtime captures | BLOCKED |
+
+**The project owner explicitly approved the concept direction on October 17, 2026** (see `design-approval.json`). The approval does not release the Function, Form, paid-asset or Runtime gates.
 
 **Function gate cannot pass yet.** Before paid generation: produce approved isolated prop images, derive top-down orthographic lower-room and reflected-ceiling plans from actual procedural/mesh geometry, render wall elevations, produce traced binary PNG opening masks/contact sheet, prove ingress/hero/symmetry and obtain explicit design approval. Credit ceiling is **0** and `pricingVerifiedAt` is intentionally empty. The 15-credit value is a **template placeholder, not verified current pricing**, and no Meshy submission is authorized.
 

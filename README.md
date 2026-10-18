@@ -28,7 +28,7 @@
 ---
 
 > [!IMPORTANT]
-> **This is a simulation-first research and education platform, not a real-vehicle controller.** The web and desktop apps cannot steer, accelerate, or brake physical vehicles. A separate, optional ROS 2 package supports **synthetic Autoware actuation** or **passive, authorized vehicle observation**. Its PACMod3 observer does not issue drive-by-wire commands or perform a physical emergency stop.
+> **This is not a real-vehicle controller.** The web and desktop apps cannot steer, accelerate, or brake physical vehicles. A separate, optional ROS 2 package supports **autoware actuation** or **passive, authorized vehicle observation**. Its PACMod3 observer does not issue drive-by-wire commands or perform a physical emergency stop.
 
 ## Explore the invisible decision
 

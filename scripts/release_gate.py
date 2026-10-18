@@ -20,7 +20,8 @@ HEX = re.compile(r"^[0-9a-f]{64}$")
 REQUIRED = (
     "README.md", "LICENSE", "CONTRIBUTING.md", "SECURITY.md", "CHANGELOG.md",
     "docs/release-checklist.md", "package.json", "package-lock.json",
-    "src-tauri/tauri.conf.json", ".github/workflows/validate.yml",
+    "src-tauri/tauri.conf.json", "scripts/verify.py",
+    "scripts/verify-browser-sim.mjs", "scripts/verify-workspace.mjs",
     ".github/workflows/windows.yml", "scripts/verify-evidence.py",
     "scripts/desktop-final-verify.py", "tests/test_release_gate.py",
 )

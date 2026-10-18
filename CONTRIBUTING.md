@@ -18,6 +18,8 @@ python scripts/release_gate.py
 
 On PowerShell, set `$env:PYTHONPATH = (Join-Path $PWD 'backend')` before the Python test command. For ROS 2 observer work, also run the dependency-free C++ contract tests in the respective GitHub workflows or a compatible Autoware workspace. A GitHub Actions status that failed **before runner allocation** is not a completed test and must not be represented as a passing run.
 
+The **Validate simulator** GitHub Actions workflow has been removed. Run the local checks above and include their results with your change. The Windows packaging and PACMod observer workflows remain separate checks.
+
 ## A useful bug report or PR includes
 
 - Reproduction steps, operating system, Node/Python versions and browser or Windows build details.

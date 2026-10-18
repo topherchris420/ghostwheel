@@ -99,7 +99,9 @@ export default function Journey({ m }: { m: ConsoleModel }) {
       </ol>
       <button
         className="button primary journey-action"
-        disabled={!m.connected || !!m.busy || (next < 2 && (m.live?.tick ?? 0) >= 8000)}
+        disabled={
+          !m.connected || !!m.busy || (next >= 0 && next < 2 && (m.live?.tick ?? 0) >= 8000)
+        }
         onClick={proceed}
       >
         {recovery

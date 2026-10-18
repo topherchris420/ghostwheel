@@ -426,7 +426,7 @@ export function useConsole() {
       if (!value.frames.length)
         throw new Error('This recording has no frames yet. Drive briefly, then try again.');
       setReplay({ ...value, source: 'local' });
-      setInspectedRun(value.run.id);
+      if (value.run.id === liveRef.current?.run_id) setInspectedRun(value.run.id);
       setTab('forensics');
       setCanPaused(false);
       setReplayIndex(0);
@@ -456,7 +456,8 @@ export function useConsole() {
     void action('export', async () => {
       if (replay) {
         saveJson(replay, 'ghostwheel-' + replay.run.id + '.json');
-        setExportedRun(replay.run.id);
+        if (replay.source !== 'imported' && replay.run.id === liveRef.current?.run_id)
+          setExportedRun(replay.run.id);
         setNotice('Download requested. Keep this JSON file; open it later in Forensic replay.');
         return;
       }

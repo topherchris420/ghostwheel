@@ -25,6 +25,10 @@ dom.window.addEventListener('error', (event) => domErrors.push(event.error));
 let model;
 let appRoot;
 const calls = [];
+const downloads = [];
+dom.window.HTMLAnchorElement.prototype.click = function () {
+  downloads.push(this.download);
+};
 let heldResolve;
 let holdNext = false;
 let transport;
@@ -75,6 +79,10 @@ try {
   });
   const mod = await import(pathToFileURL(join(temporary, 'workspace.mjs')).href);
   transport = new mod.BrowserBackend();
+  // Keep a real archived run available for cross-recording progress checks.
+  const olderRunId = (await transport.request('/api/state')).run_id;
+  for (let i = 0; i < 4; i++) transport.tick();
+  await transport.request('/api/reset', { architecture_id: 'aster', seed: 42 });
   globalThis.__gwTest = {
     request: async (path, body) => {
       calls.push(path);
@@ -240,6 +248,26 @@ try {
 
   const exported = JSON.stringify(model.replay);
   await act(async () => {
+    model.exportRun();
+    await flush();
+  });
+  assert.equal(model.exportedRun, runId);
+  assert.equal(downloads.at(-1), `ghostwheel-${runId}.json`);
+  await act(async () => {
+    model.loadReplay(olderRunId);
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  });
+  assert.equal(model.replay.run.id, olderRunId);
+  assert.equal(document.querySelector('.journey'), null);
+  assert.equal(model.inspectedRun, runId, 'older replay preserves current-run inspection credit');
+  await act(async () => {
+    model.exportRun();
+    await flush();
+  });
+  assert.equal(downloads.at(-1), `ghostwheel-${olderRunId}.json`);
+  assert.equal(model.exportedRun, runId, 'older download preserves current-run export credit');
+  console.log('PASS  archived recordings remain usable without erasing current-run progress');
+  await act(async () => {
     model.exitReplay();
     model.setTab('operations');
   });
@@ -274,6 +302,11 @@ try {
     'imported files do not claim live-run progress',
   );
   assert.doesNotMatch(document.body.textContent, /Recording integrity verified/);
+  await act(async () => {
+    model.exportRun();
+    await flush();
+  });
+  assert.equal(model.exportedRun, runId, 'imported downloads preserve current-run export credit');
   console.log('PASS  exported sessions reopen; imported verification claims are never trusted');
 
   assert.throws(() => mod.parseReplayFile('{bad}'), /valid JSON/);
@@ -349,6 +382,72 @@ try {
   });
   assert.equal(transport.world.paused, false);
   console.log('PASS  fresh runs clear walkthrough progress and its primary action recovers pause');
+  // Reopening a same-ID downloaded file must not grant the new run export credit.
+  const newRunId = model.live.run_id;
+  await act(async () => {
+    for (let i = 0; i < 4; i++) transport.tick();
+  });
+  const newRecording = await transport.request('/api/replay?id=' + newRunId);
+  const newFile = JSON.stringify(newRecording);
+  await act(async () => {
+    model.importReplay({ size: newFile.length, text: async () => newFile });
+    await flush();
+  });
+  assert.equal(model.replay?.source, 'imported');
+  assert.equal(model.replay.run.id, newRunId);
+  await act(async () => {
+    model.exportRun();
+    await flush();
+  });
+  assert.notEqual(model.exportedRun, newRunId, 'imported copies cannot grant live-run credit');
+
+  const limitHost = document.createElement('div');
+  document.body.append(limitHost);
+  const limitRoot = createRoot(limitHost);
+  const limitModel = {
+    ...model,
+    replay: null,
+    busy: '',
+    live: {
+      ...model.live,
+      tick: 8000,
+      paused: true,
+      metrics: { ...model.live.metrics, accepted: 1 },
+      vehicle: { ...model.live.vehicle, speed_mps: 1 },
+    },
+    scenarioRun: newRunId,
+    scenarioResult: { passed: true },
+    inspectedRun: newRunId,
+    exportedRun: newRunId,
+  };
+  try {
+    await act(async () => {
+      limitRoot.render(React.createElement(mod.Journey, { m: limitModel }));
+    });
+    const explore = limitHost.querySelector('.journey-action');
+    assert.match(explore.textContent, /Explore Research lab/);
+    assert.equal(explore.disabled, false, 'completed runs can still open Research at the limit');
+    await act(async () => {
+      explore.click();
+    });
+    assert.equal(model.tab, 'research');
+    await act(async () => {
+      limitRoot.render(React.createElement(mod.Journey, { m: { ...limitModel, scenarioRun: '' } }));
+    });
+    assert.equal(
+      limitHost.querySelector('.journey-action').disabled,
+      true,
+      'unfinished driving steps remain blocked at the recording limit',
+    );
+  } finally {
+    await act(async () => {
+      limitRoot.unmount();
+    });
+    limitHost.remove();
+  }
+  console.log(
+    'PASS  imported copies cannot grant progress; completed recordings can open Research',
+  );
   assert.equal(domErrors.length, 0, 'no unhandled UI errors');
   console.log('PASS  focus loss stops driving; resetting clears stale scenario state');
 } finally {

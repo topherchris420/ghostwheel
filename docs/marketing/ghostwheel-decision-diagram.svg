@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 500" width="1200" height="500" role="img" aria-labelledby="title desc">
+<title id="title">GHOSTWHEEL: What happens when a simulated car refuses a command?</title>
+<desc id="desc">Four-stage interactive diagram preview. A replayed steering request reaches an authorization gateway, is rejected, causes a modeled safe state, and creates an evidence ledger event. Select the diagram in the README to explore five scenarios.</desc>
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0C151D"/><stop offset="0.55" stop-color="#121B22"/><stop offset="1" stop-color="#111015"/></linearGradient>
+<linearGradient id="card" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1D2A33"/><stop offset="1" stop-color="#152029"/></linearGradient>
+<linearGradient id="danger" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#A7463D"/><stop offset="1" stop-color="#E58A69"/></linearGradient>
+<pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse"><path d="M30 0H0V30" fill="none" stroke="#C8D3D9" stroke-width=".5" opacity=".08"/></pattern>
+<filter id="glow"><feGaussianBlur stdDeviation="20"/></filter>
+</defs>
+<rect width="1200" height="500" fill="url(#bg)"/>
+<rect width="1200" height="500" fill="url(#grid)"/>
+<ellipse cx="1055" cy="270" rx="140" ry="145" fill="#CD694C" opacity=".07" filter="url(#glow)"/>
+<path d="M0 1H1200V499H0Z" fill="none" stroke="#39464D" stroke-width="2"/>
+<g font-family="Arial,Helvetica,sans-serif">
+<g fill="#EBA576" font-size="15" font-weight="700" letter-spacing="2.6"><text x="58" y="53">GHOSTWHEEL</text><text x="215" y="53" fill="#81909B" font-size="12" letter-spacing="2">GW-01 / INTERACTIVE LAB</text></g>
+<text x="58" y="111" font-size="38" letter-spacing="-1" font-weight="700" fill="#FAFAF6">WHAT HAPPENS WHEN A CAR</text>
+<text x="58" y="155" font-size="38" letter-spacing="-1" font-weight="700" fill="#FAFAF6">REFUSES TO OBEY?</text>
+<text x="59" y="187" fill="#A9B8BF" font-size="17">Follow the invisible decision between a command and its simulated consequence.</text>
+<g transform="translate(50 235)">
+<rect width="254" height="163" rx="15" fill="url(#card)" stroke="#374853"/>
+<rect x="17" y="20" width="33" height="25" rx="6" fill="#3B4A54"/>
+<text x="33.5" y="37" text-anchor="middle" fill="#EFF5F7" font-size="13" font-weight="700">01</text>
+<text x="61" y="38" fill="#98ABB5" font-weight="700" font-size="14" letter-spacing=".8">COMMAND</text>
+<text x="19" y="84" fill="#F4F7F7" font-size="22" font-weight="700">STEER +8°</text>
+<text x="19" y="114" fill="#B8C6CC" font-size="15">Sequence #42 reused</text>
+<rect x="18" y="131" width="108" height="20" rx="10" fill="#313942"/>
+<text x="72" y="145" fill="#E0C8B9" text-anchor="middle" font-size="11" font-weight="700">REPLAY INPUT</text>
+</g>
+<path d="M310 317H333" stroke="#D08C67" stroke-width="2.5"/>
+<path d="M326 312L334 317 326 322" fill="none" stroke="#D08C67" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+<g transform="translate(341 235)">
+<rect width="254" height="163" rx="15" fill="url(#card)" stroke="#C87860" stroke-width="1.6"/>
+<rect x="17" y="20" width="33" height="25" rx="6" fill="#683D3B"/>
+<text x="33.5" y="37" text-anchor="middle" fill="#FFE6D9" font-size="13" font-weight="700">02</text>
+<text x="61" y="38" fill="#D7A28C" font-weight="700" font-size="14" letter-spacing=".8">GATEWAY</text>
+<text x="19" y="84" fill="#FFB499" font-size="22" font-weight="700">REJECTED</text>
+<text x="19" y="114" fill="#D5DDE0" font-size="15">replayed_sequence</text>
+<rect x="18" y="131" width="149" height="20" rx="10" fill="#593B3B"/>
+<text x="92.5" y="145" fill="#FFDDD2" text-anchor="middle" font-size="11" font-weight="700">AUTHORIZATION FAIL</text>
+</g>
+<path d="M601 317H624" stroke="#D08C67" stroke-width="2.5"/>
+<path d="M617 312L625 317 617 322" fill="none" stroke="#D08C67" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+<g transform="translate(632 235)">
+<rect width="254" height="163" rx="15" fill="url(#card)" stroke="#374853"/>
+<rect x="17" y="20" width="33" height="25" rx="6" fill="#3B4A54"/>
+<text x="33.5" y="37" text-anchor="middle" fill="#EFF5F7" font-size="13" font-weight="700">03</text>
+<text x="61" y="38" fill="#98ABB5" font-weight="700" font-size="14" letter-spacing=".8">VIRTUAL VEHICLE</text>
+<text x="19" y="84" fill="#F4F7F7" font-size="22" font-weight="700">SAFE STATE</text>
+<text x="19" y="114" fill="#B8C6CC" font-size="15">Modeled response only</text>
+<rect x="18" y="131" width="158" height="20" rx="10" fill="#254843"/>
+<text x="97" y="145" fill="#A2DACF" text-anchor="middle" font-size="11" font-weight="700">NO REAL ACTUATION</text>
+</g>
+<path d="M892 317H915" stroke="#D08C67" stroke-width="2.5"/>
+<path d="M908 312L916 317 908 322" fill="none" stroke="#D08C67" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+<g transform="translate(923 235)">
+<rect width="227" height="163" rx="15" fill="url(#card)" stroke="#374853"/>
+<rect x="17" y="20" width="33" height="25" rx="6" fill="#3B4A54"/>
+<text x="33.5" y="37" text-anchor="middle" fill="#EFF5F7" font-size="13" font-weight="700">04</text>
+<text x="61" y="38" fill="#98ABB5" font-weight="700" font-size="14" letter-spacing=".8">EVIDENCE</text>
+<text x="19" y="84" fill="#F4F7F7" font-size="22" font-weight="700">RECORDED</text>
+<text x="19" y="114" fill="#B8C6CC" font-size="15">Verdict + event trail</text>
+<rect x="18" y="131" width="124" height="20" rx="10" fill="#344451"/>
+<text x="80" y="145" fill="#CAE0EE" text-anchor="middle" font-size="11" font-weight="700">FORENSIC REPLAY</text>
+</g>
+<path d="M55 433H1145" stroke="#34434C"/>
+<rect x="55" y="447" width="241" height="32" rx="16" fill="#D9946A"/>
+<text x="175.5" y="468" text-anchor="middle" font-size="13" font-weight="700" letter-spacing=".6" fill="#1B1818">EXPLORE FIVE SCENARIOS →</text>
+<text x="1145" y="468" text-anchor="end" fill="#81919C" font-size="12">INTERACTIVE EDUCATIONAL SIMULATION · OPEN SOURCE</text>
+</g>
+</svg>

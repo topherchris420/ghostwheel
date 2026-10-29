@@ -512,6 +512,113 @@
   overflow-wrap: anywhere;
   white-space: pre-wrap;
 }
+/* The run, told plainly: read the recording beside the replay it describes. */
+.replay-stage {
+  display: grid;
+  gap: 20px;
+}
+.replay-stage.with-story {
+  grid-template-columns: minmax(0, 1.6fr) minmax(300px, 1fr);
+}
+.trajectory-panel {
+  scroll-margin-top: 72px;
+}
+.story-panel {
+  display: flex;
+  flex-direction: column;
+  /* Sized by the replay beside it; the moments scroll within that height. */
+  contain: size;
+  min-height: 420px;
+}
+.story-panel .section-title .icon-button {
+  margin-left: 4px;
+}
+.tag.amber-tag {
+  color: #e2b48c;
+  background: #241d17;
+  border-color: #5a4535;
+}
+.story-standing {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  color: #a7c2c4;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.story-standing.unverified {
+  color: #e8c09c;
+  background: #1f1914;
+}
+.story-moments {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 6px 0 28px;
+  overflow-y: auto;
+  list-style: none;
+  /* A soft edge says the story continues below. */
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
+}
+.story-moment {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px 18px 12px 15px;
+  border-left: 3px solid transparent;
+}
+.story-moment.current {
+  background: #142128;
+  border-left-color: var(--cyan);
+}
+.story-moment.refusal.current,
+.story-moment.safety.current {
+  border-left-color: var(--amber);
+}
+.story-time {
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 2px 0;
+  min-height: 32px;
+  font-family: var(--mono);
+  text-align: left;
+}
+.story-time b {
+  font-size: 12px;
+  color: #bcd3d6;
+}
+.story-time span {
+  font-size: 9px;
+  color: #6f8794;
+  letter-spacing: 0.4px;
+}
+.story-moment.refusal .story-time b,
+.story-moment.safety .story-time b {
+  color: var(--amber);
+}
+.story-time:hover b {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.story-moment p {
+  color: #c3d2d8;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.story-moment.note p {
+  color: #9fb3bd;
+}
+.story-moment code {
+  padding: 1px 5px;
+  border-radius: 2px;
+  background: #251d17;
+  color: #eab991;
+  font: 11px var(--mono);
+  overflow-wrap: anywhere;
+}
 .research-verdict {
   display: flex;
   gap: 16px;
@@ -553,6 +660,16 @@
   }
   .journey-number {
     flex-shrink: 0;
+  }
+  .replay-stage.with-story {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .story-panel {
+    contain: none;
+    min-height: 0;
+  }
+  .story-moments {
+    max-height: 460px;
   }
 }
 @media (max-width: 760px) {
@@ -694,5 +811,13 @@
   }
   .experiment-controls label {
     font-size: 10px;
+  }
+  .story-moment {
+    grid-template-columns: 64px minmax(0, 1fr);
+    gap: 10px;
+    padding: 12px 14px 12px 11px;
+  }
+  .story-standing {
+    padding: 13px 14px;
   }
 }

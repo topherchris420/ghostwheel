@@ -42,7 +42,9 @@ try {
         export {default as Operations} from './src/Operations';
         export {default as Forensics} from './src/Forensics';
         export {default as Journey} from './src/Journey';
-        export {default as SessionStatus} from './src/SessionStatus';`,
+        export {default as SessionStatus} from './src/SessionStatus';
+        export {tellRun, storyMarkdown, clock} from './src/story';
+        export {ARCHITECTURES} from './src/sim/model';`,
       resolveDir: rootDir,
       loader: 'tsx',
     },
@@ -215,6 +217,8 @@ try {
     for (let i = 0; i < 5; i++) transport.tick();
     model.executeScenario();
     await flush();
+    // The live simulation records the next frame long before a person can open the review.
+    transport.tick();
   });
   assert.equal(model.scenarioResult.passed, true);
   assert.match(document.body.textContent, /Safeguard responded as expected/);
@@ -245,6 +249,275 @@ try {
     model.setPlaying(false);
   });
   console.log('PASS  scenario outcome, verified replay, reconstructed path and replay restart');
+
+  // The run, told plainly: the same recording, read beside the replay.
+  const story = mod.tellRun(model.replay, mod.ARCHITECTURES[0]);
+  const storyPanel = document.querySelector('.story-panel');
+  assert.ok(storyPanel, 'the review shows the run as a story');
+  assert.match(storyPanel.textContent, /The run, told plainly/);
+  assert.match(storyPanel.textContent, /VERIFIED RECORDING/);
+  assert.match(storyPanel.textContent, /Told from a verified recording/);
+  assert.equal(storyPanel.querySelectorAll('.story-moment').length, story.moments.length);
+  const told = story.moments.find((moment) => moment.tone === 'refusal');
+  assert.match(
+    told.text,
+    /reused an already accepted sequence number, so the gateway refused it: `replayed_sequence`\./,
+  );
+  assert.equal(
+    storyPanel.querySelector('.story-moment.refusal code').textContent,
+    'replayed_sequence',
+  );
+  const tellAt = [...storyPanel.querySelectorAll('.story-moment')].findIndex((item) =>
+    item.classList.contains('refusal'),
+  );
+  await act(async () => {
+    storyPanel.querySelectorAll('.story-time')[tellAt].click();
+  });
+  assert.equal(model.replayIndex, told.frame, 'a moment seeks the replay to its frame');
+  assert.equal(model.replay.frames[told.frame].tick, told.tick);
+  assert.equal(
+    storyPanel.querySelectorAll('.story-moment')[tellAt].getAttribute('aria-current'),
+    'step',
+  );
+  await act(async () => {
+    storyPanel.querySelector('button[aria-label="Save this story as Markdown"]').click();
+    await flush();
+  });
+  assert.equal(downloads.at(-1), `ghostwheel-story-${runId}.md`);
+  assert.match(mod.storyMarkdown(model.replay, story), /^# The run, told plainly\n/);
+  const single = document.createElement('div');
+  document.body.append(single);
+  const singleRoot = createRoot(single);
+  await act(async () => {
+    singleRoot.render(
+      React.createElement(mod.Forensics, { m: { ...model, runs: model.runs.slice(0, 1) } }),
+    );
+  });
+  assert.equal(single.querySelector('.run-library-heading').textContent, '1 RECENT RUN');
+  await act(async () => {
+    singleRoot.unmount();
+  });
+  single.remove();
+  console.log('PASS  the review tells the run in order; each moment seeks its frame');
+
+  // Every telling is derived from a real recording; nothing is pre-written.
+  const tell = async (script, architecture = 'aster') => {
+    const backend = new mod.BrowserBackend();
+    try {
+      if (architecture !== 'aster')
+        await backend.request('/api/reset', { architecture_id: architecture, seed: 42 });
+      const boot = await backend.request('/api/bootstrap');
+      let order = 0;
+      const send = async (steer, throttle, brake = 0) => {
+        const state = await backend.request('/api/state');
+        return backend.request('/api/control', {
+          vehicle_id: state.vehicle.id,
+          steer,
+          throttle,
+          brake,
+          sequence: Math.max(++order, state.vehicle.last_sequence + 1),
+          issued_tick: state.tick,
+          capability: boot.token,
+          session_id: boot.session_id,
+        });
+      };
+      const tick = (count = 1) => {
+        for (let i = 0; i < count; i++) backend.tick();
+      };
+      const drive = async (count, steer, throttle, brake = 0) => {
+        for (let i = 0; i < count; i++) {
+          if (i % 2 === 0) await send(steer, throttle, brake);
+          tick();
+        }
+      };
+      await script({ backend, send, tick, drive });
+      const state = await backend.request('/api/state');
+      const replay = await backend.request('/api/replay?id=' + state.run_id);
+      const profile = mod.ARCHITECTURES.find((a) => a.id === architecture);
+      const told = mod.tellRun({ ...replay, source: 'local' }, profile);
+      assert.deepEqual(mod.tellRun({ ...replay, source: 'local' }, profile), told, 'deterministic');
+      let lastTick = -1;
+      for (const moment of told.moments) {
+        assert.ok(moment.tick >= lastTick, 'moments are told in recording order');
+        assert.ok(replay.frames[moment.frame].tick >= moment.tick, 'each moment seeks a frame');
+        lastTick = moment.tick;
+      }
+      return { replay, told, text: told.moments.map((moment) => moment.text).join('\n') };
+    } finally {
+      backend.stop();
+    }
+  };
+  // A command sent before the first frame is told at the first frame that shows it.
+  const early = await tell(({ drive }) => drive(30, 0, 0.5));
+  assert.deepEqual(
+    early.told.moments.slice(0, 2).map((moment) => [moment.tick, moment.text.split('.')[0]]),
+    [
+      [1, 'The recording opened at tick 1 with ASTER moving at 0'],
+      [1, 'The gateway accepted its first command, and ASTER began to move'],
+    ],
+  );
+  const quiet = await tell(({ tick }) => tick(20));
+  assert.equal(quiet.told.moments.length, 2);
+  assert.match(quiet.text, /^The recording opened at tick 1 with ASTER at rest\.\n/);
+  assert.match(quiet.text, /at rest, where it began\. No command reached the gateway\.$/);
+
+  const smooth = await tell(async ({ tick, drive }) => {
+    tick(3);
+    await drive(60, 0.2, 0.4);
+    await drive(40, 0, 0, 0.7);
+  });
+  const accepted = smooth.replay.frames.at(-1).metrics.accepted;
+  assert.match(smooth.text, /The gateway accepted its first command, and ASTER began to move\./);
+  assert.match(smooth.text, /steered as far as \d+\.\d° right/);
+  assert.match(smooth.text, /ASTER braked to a stop\./);
+  assert.match(smooth.text, new RegExp(`accepted ${accepted} commands and refused none\\.`));
+
+  const replayed = await tell(async ({ backend, tick, drive }) => {
+    tick(3);
+    await drive(60, 0.2, 0.4);
+    await backend.request('/api/stop', {});
+    await backend.request('/api/scenario', { scenario_id: 'replay' });
+    tick(60);
+  });
+  const refused = replayed.told.moments.find((moment) => moment.tone === 'refusal');
+  assert.match(
+    refused.text,
+    /^A command reused an already accepted sequence number, so the gateway refused it: `replayed_sequence`\. ASTER entered its virtual safe state and came to rest (\d+\.\d\d) s later, (\d+\.\d) m further on\.$/,
+  );
+  // The outcome is measured from the frames themselves.
+  const frames = replayed.replay.frames;
+  const rest = frames.findIndex((frame, i) => i > refused.frame && frame.vehicle.speed_mps === 0);
+  let distance = 0;
+  for (let i = refused.frame + 1; i <= rest; i++)
+    distance += Math.hypot(
+      frames[i].vehicle.x_m - frames[i - 1].vehicle.x_m,
+      frames[i].vehicle.y_m - frames[i - 1].vehicle.y_m,
+    );
+  const [, seconds, metres] = /rest (\d+\.\d\d) s later, (\d+\.\d) m/.exec(refused.text);
+  assert.equal(seconds, (frames[rest].sim_time - refused.time).toFixed(2));
+  assert.equal(metres, distance.toFixed(1));
+
+  for (const [scenario, pattern] of [
+    [
+      'pedals',
+      /A command asked for throttle and brake at the same time, so the gateway refused it: `conflicting_pedals`\./,
+    ],
+    [
+      'stale',
+      /A command arrived more than 300 ms of simulation time after it was issued, so the gateway refused it: `stale_command`\./,
+    ],
+  ]) {
+    const result = await tell(async ({ backend, tick, drive }) => {
+      tick(3);
+      await drive(40, 0, 0.4);
+      await backend.request('/api/scenario', { scenario_id: scenario });
+      tick(40);
+    });
+    assert.match(result.text, pattern);
+    assert.match(result.text, /ASTER entered its virtual safe state and came to rest/);
+  }
+
+  const lapsed = await tell(async ({ tick, drive }) => {
+    tick(3);
+    await drive(40, 0.1, 0.4);
+    tick(60);
+  });
+  assert.match(
+    lapsed.text,
+    /For 7 ticks, 350 ms of simulation time, no command followed the one accepted at \d\d:\d\d\.\d\d\. The 6-tick command lease had run out, and the watchdog requested the virtual safe state: `command_timeout`\. ASTER came to rest/,
+  );
+  assert.match(lapsed.text, /the watchdog stepped in once\.$/);
+
+  const halted = await tell(async ({ backend, tick, drive }) => {
+    tick(3);
+    await drive(40, 0, 0.5);
+    await backend.request('/api/stop', {});
+    tick(30);
+    await drive(30, -0.2, 0.5);
+    await backend.request('/api/pause', { paused: true });
+    await backend.request('/api/pause', { paused: false });
+    tick(80);
+  });
+  assert.match(halted.text, /Safe Stop was requested from the console, and ASTER came to rest/);
+  assert.match(halted.text, /ASTER moved off again\./);
+  assert.match(halted.text, /steered as far as \d+\.\d° left/);
+  assert.match(
+    halted.text,
+    /The simulation was paused, which placed every vehicle in its virtual safe state\. ASTER came to rest/,
+  );
+
+  const sharp = await tell(async ({ send, tick, drive }) => {
+    tick(2);
+    await drive(140, 0, 0.8);
+    for (let step = 1; step <= 20; step++) {
+      const result = await send(Math.min(1, 0.05 * step), 0.8);
+      tick();
+      if (!result.accepted) break;
+    }
+    tick(20);
+  });
+  const turn = sharp.told.moments.find((moment) => moment.tone === 'refusal');
+  const [, kmh, angle, lateral] =
+    /^At (\d+\.\d) km\/h, a command asked for a (\d+\.\d)° turn that would have needed (\d+\.\d\d) m\/s² of lateral acceleration, beyond the model’s 5\.0 m\/s² limit, so the gateway refused it: `lateral_acceleration_limit`\./.exec(
+      turn.text,
+    );
+  const judged = sharp.replay.frames.find((frame) => frame.tick === turn.tick).vehicle.speed_mps;
+  const requested =
+    sharp.replay.frames.at(-1).events.find((event) => event.reason === 'lateral_acceleration_limit')
+      .steer * 32;
+  assert.equal(kmh, (judged * 3.6).toFixed(1));
+  assert.equal(angle, requested.toFixed(1));
+  assert.equal(lateral, ((judged ** 2 * Math.tan((requested * Math.PI) / 180)) / 2.65).toFixed(2));
+
+  const burst = await tell(async ({ send, tick, drive }) => {
+    tick(3);
+    await drive(60, 0, 0.4);
+    for (let i = 0; i < 12; i++) {
+      await send(i % 2 ? 0.9 : -0.9, 0.4);
+      tick();
+    }
+    tick(60);
+  }, 'vector');
+  const bursts = burst.told.moments.filter((moment) => moment.tone === 'refusal');
+  assert.equal(bursts.length, 1, 'a burst of refusals is told once');
+  assert.match(
+    bursts[0].text,
+    /faster than VECTOR’s 70°\/s actuator can move, so the gateway refused it: `steering_slew_limit`\. By \d\d:\d\d\.\d\d, \d+ more were refused for the same reason\./,
+  );
+
+  const crowded = await tell(async ({ backend, send, tick }) => {
+    tick(3);
+    for (let i = 0; i < 30; i++) await send(0, 0.8, 0.8);
+    tick(10);
+    assert.equal((await backend.request('/api/state')).metrics.rejected, 30);
+  });
+  assert.match(
+    crowded.text,
+    /6 gateway decisions between 00:00\.15 and 00:00\.20 fell outside the recorded event window\./,
+  );
+  assert.match(crowded.text, /The gateway refused 24 commands at once: `conflicting_pedals` ×24\./);
+  assert.match(crowded.text, /refused 30\.$/);
+
+  const unseen = await tell(async ({ backend, tick, drive }) => {
+    tick(3);
+    await drive(40, 0, 0.4);
+    await backend.request('/api/scenario', { scenario_id: 'pedals' });
+  });
+  assert.doesNotMatch(unseen.text, /conflicting_pedals/, 'no frame shows the refusal');
+  assert.match(
+    unseen.text,
+    /2 more commands reached the gateway after the last recorded frame\. The verified ledger holds them, but no frame shows their outcome\.\nThe recording ended at tick \d+ with ASTER moving at \d+\.\d km\/h, \d+\.\d m from where it began\. Across the recorded frames, the gateway accepted 20 commands and refused none\.$/,
+  );
+
+  const reopened = mod.tellRun(mod.parseReplayFile(JSON.stringify(replayed.replay)));
+  assert.equal(reopened.verified, false);
+  assert.match(reopened.standing, /^Imported · not verified here\./);
+  assert.deepEqual(
+    reopened.moments,
+    replayed.told.moments,
+    'an imported copy tells the same events, flagged as unverified',
+  );
+  console.log('PASS  stories follow real recordings: refusals, lease, stops, bursts and gaps');
 
   const exported = JSON.stringify(model.replay);
   await act(async () => {
@@ -296,6 +569,12 @@ try {
     await flush();
   });
   assert.match(document.body.textContent, /Imported · not verified here/);
+  assert.match(document.querySelector('.story-panel').textContent, /NOT VERIFIED HERE/);
+  assert.match(
+    document.querySelector('.story-standing').textContent,
+    /^Imported · not verified here\. /,
+    'a story told from an imported file says it was not verified',
+  );
   assert.equal(
     document.querySelector('.journey'),
     null,

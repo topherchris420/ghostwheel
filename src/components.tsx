@@ -7,9 +7,10 @@ export const pad = (n: number, length = 6) => String(n).padStart(length, '0');
 export const clamp = (value: number, min: number, max: number) =>
   Math.max(min, Math.min(max, value));
 export function saveJson(value: unknown, name: string) {
-  const url = URL.createObjectURL(
-    new Blob([JSON.stringify(value, null, 2)], { type: 'application/json' }),
-  );
+  saveText(JSON.stringify(value, null, 2), name, 'application/json');
+}
+export function saveText(text: string, name: string, type: string) {
+  const url = URL.createObjectURL(new Blob([text], { type }));
   const a = document.createElement('a');
   a.href = url;
   a.download = name;

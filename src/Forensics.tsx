@@ -16,17 +16,33 @@ import { edition } from './api';
 import { SectionTitle, TestField } from './components';
 import { durationLabel } from './evidence';
 import { RETAINED_RUNS } from './sim/limits';
+import StoryPanel from './StoryPanel';
+import type { Moment } from './story';
 import type { ConsoleModel } from './useConsole';
 
 export default function Forensics({ m }: { m: ConsoleModel }) {
   const { runs, replay, busy, snapshot, connected, playing, replayIndex } = m;
   const fileInput = useRef<HTMLInputElement>(null);
+  const trajectory = useRef<HTMLElement>(null);
   const integrity = replay?.integrity;
   const imported = replay?.source === 'imported';
   const duration = replay?.frames.at(-1)?.sim_time ?? 0;
   const togglePlayback = () => {
     if (!playing && replay && replayIndex >= replay.frames.length - 1) m.setReplayIndex(0);
     m.setPlaying((v) => !v);
+  };
+  const seek = (moment: Moment) => {
+    m.setPlaying(false);
+    m.setReplayIndex(moment.frame);
+    // Stacked on narrow screens, the story sits below the replay: bring the moment into view.
+    const box = trajectory.current?.getBoundingClientRect();
+    if (box?.height && box.bottom < 120)
+      trajectory.current?.scrollIntoView({
+        block: 'start',
+        behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+          ? 'auto'
+          : 'smooth',
+      });
   };
   return (
     <div className="forensics-layout">
@@ -89,7 +105,8 @@ export default function Forensics({ m }: { m: ConsoleModel }) {
         )}
         <div className="run-library-heading">
           <Database size={15} />
-          {runs.length} {edition === 'browser' ? 'RECENT' : 'LOCAL'} RUNS
+          {runs.length} {edition === 'browser' ? 'RECENT' : 'LOCAL'}{' '}
+          {runs.length === 1 ? 'RUN' : 'RUNS'}
         </div>
         {edition === 'browser' && (
           <p className="run-library-note">
@@ -155,80 +172,83 @@ export default function Forensics({ m }: { m: ConsoleModel }) {
         )}
       </section>
       <div className="replay-main">
-        <section className="panel">
-          <SectionTitle number="02" title="Trajectory reconstruction">
-            <span className="tag">
-              {replay ? (imported ? 'IMPORTED SNAPSHOTS' : 'RECORDED FRAMES') : 'LIVE PREVIEW'}
-            </span>
-          </SectionTitle>
-          {!replay && (
-            <div className="replay-instruction">
-              <Play size={18} />
-              <div>
-                <b>Choose a run to see its story.</b>
-                <p>
-                  Playback shows the recorded path. Pause, scrub or change speed to examine a
-                  moment.
-                </p>
+        <div className={replay ? 'replay-stage with-story' : 'replay-stage'}>
+          <section className="panel trajectory-panel" ref={trajectory}>
+            <SectionTitle number="02" title="Trajectory reconstruction">
+              <span className="tag">
+                {replay ? (imported ? 'IMPORTED SNAPSHOTS' : 'RECORDED FRAMES') : 'LIVE PREVIEW'}
+              </span>
+            </SectionTitle>
+            {!replay && (
+              <div className="replay-instruction">
+                <Play size={18} />
+                <div>
+                  <b>Choose a run to see its story.</b>
+                  <p>
+                    Playback shows the recorded path. Pause, scrub or change speed to examine a
+                    moment.
+                  </p>
+                </div>
               </div>
+            )}
+            <TestField snapshot={snapshot} connected={connected || !!replay} />
+            <div className="replay-controls">
+              <button
+                className="button secondary"
+                disabled={!replay?.frames.length}
+                aria-label={playing ? 'Pause replay' : 'Play replay'}
+                onClick={togglePlayback}
+              >
+                {playing ? <Pause size={14} /> : <Play size={14} />}
+              </button>
+              <input
+                aria-label="Replay frame"
+                type="range"
+                min="0"
+                max={Math.max(0, (replay?.frames.length || 1) - 1)}
+                value={replayIndex}
+                disabled={!replay}
+                onChange={(e) => {
+                  m.setPlaying(false);
+                  m.setReplayIndex(Number(e.target.value));
+                }}
+              />
+              <span className="mono tiny">
+                {replay
+                  ? `${durationLabel(snapshot?.sim_time ?? 0)} / ${durationLabel(duration)}`
+                  : 'SELECT A RUN'}
+              </span>
+              <select
+                className="playback-speed"
+                aria-label="Playback speed"
+                value={m.playbackSpeed}
+                disabled={!replay}
+                onChange={(e) => m.setPlaybackSpeed(Number(e.target.value))}
+              >
+                {[0.5, 1, 2, 4].map((speed) => (
+                  <option key={speed} value={speed}>
+                    {speed}×
+                  </option>
+                ))}
+              </select>
+              <button
+                className="icon-button"
+                aria-label="Reset replay position"
+                onClick={() => {
+                  m.setPlaying(false);
+                  m.setReplayIndex(0);
+                }}
+                disabled={!replay}
+              >
+                <RotateCcw size={15} />
+              </button>
             </div>
-          )}
-          <TestField snapshot={snapshot} connected={connected || !!replay} />
-          <div className="replay-controls">
-            <button
-              className="button secondary"
-              disabled={!replay?.frames.length}
-              aria-label={playing ? 'Pause replay' : 'Play replay'}
-              onClick={togglePlayback}
-            >
-              {playing ? <Pause size={14} /> : <Play size={14} />}
-            </button>
-            <input
-              aria-label="Replay frame"
-              type="range"
-              min="0"
-              max={Math.max(0, (replay?.frames.length || 1) - 1)}
-              value={replayIndex}
-              disabled={!replay}
-              onChange={(e) => {
-                m.setPlaying(false);
-                m.setReplayIndex(Number(e.target.value));
-              }}
-            />
-            <span className="mono tiny">
-              {replay
-                ? `${durationLabel(snapshot?.sim_time ?? 0)} / ${durationLabel(duration)}`
-                : 'SELECT A RUN'}
-            </span>
-            <select
-              className="playback-speed"
-              aria-label="Playback speed"
-              value={m.playbackSpeed}
-              disabled={!replay}
-              onChange={(e) => m.setPlaybackSpeed(Number(e.target.value))}
-            >
-              {[0.5, 1, 2, 4].map((speed) => (
-                <option key={speed} value={speed}>
-                  {speed}×
-                </option>
-              ))}
-            </select>
-            <button
-              className="icon-button"
-              aria-label="Reset replay position"
-              onClick={() => {
-                m.setPlaying(false);
-                m.setReplayIndex(0);
-              }}
-              disabled={!replay}
-            >
-              <RotateCcw size={15} />
-            </button>
-          </div>
-        </section>
+          </section>
+          <StoryPanel m={m} onSeek={seek} />
+        </div>
         <div className="forensic-summary">
           <div className="panel">
-            <SectionTitle number="03" title="Evidence integrity">
+            <SectionTitle number="04" title="Evidence integrity">
               <ShieldCheck size={14} />
             </SectionTitle>
             {replay && integrity ? (
@@ -283,7 +303,7 @@ export default function Forensics({ m }: { m: ConsoleModel }) {
             )}
           </div>
           <div className="panel">
-            <SectionTitle number="04" title="Session summary">
+            <SectionTitle number="05" title="Session summary">
               <Database size={14} />
             </SectionTitle>
             {replay ? (

@@ -24,7 +24,7 @@ Run the Research suite with seed 42. Explain the denominator: 24 rejected invali
 
 ## 3:50-4:40 - forensic replay
 
-Load a recorded interactive run, verify the chain and builtin recomputation, scrub and play. Emphasize that this is read-only playback. Explain that the hash chain exposes partial corruption relative to the saved anchor; a local administrator could rewrite the whole record and anchor.
+Load a recorded interactive run, verify the chain and builtin recomputation, scrub and play. Read the refusal aloud from **The run, told plainly** and select its time to jump the replay to that tick. Emphasize that this is read-only playback, and that the story restates the recorded frames rather than adding evidence. Explain that the hash chain exposes partial corruption relative to the saved anchor; a local administrator could rewrite the whole record and anchor.
 
 ## 4:40-5:00 - close with the limitations
 

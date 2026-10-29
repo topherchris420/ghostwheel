@@ -32,8 +32,9 @@ try {
   const outfile = join(work, 'sim.mjs');
   await build({
     stdin: {
-      contents: ['random', 'sha256', 'engine', 'experiments', 'recorder', 'backend']
+      contents: ['random', 'sha256', 'model', 'engine', 'experiments', 'recorder', 'backend']
         .map((name) => `export * from ${JSON.stringify(join(root, 'src/sim', name))};`)
+        .concat(`export { tellRun } from ${JSON.stringify(join(root, 'src/story'))};`)
         .join('\n'),
       resolveDir: root,
       sourcefile: entry,
@@ -166,6 +167,83 @@ try {
     'standalone Python verifier accepts browser-exported event ledger',
     verified.stderr.trim(),
   );
+  // The desktop edition replays through Python: the same session must tell the same story.
+  const session = [
+    ['tick', 3], ['drive', 60, 0.2, 0.4], ['scenario', 'replay'], ['tick', 50], ['drive', 40, -0.15, 0.5],
+    ['stop'], ['tick', 40], ['drive', 20, 0, 0.4], ['tick', 12], ['drive', 20, 0.1, 0.4], ['pause'], ['tick', 30],
+  ];
+  const pyReplay = py(
+    `import json,os,sys
+from ghostwheel.engine import World
+from ghostwheel.experiments import exercise_scenario
+from ghostwheel.recorder import Recorder
+w=World('aster',42); r=Recorder(os.path.join(sys.argv[1],'story.sqlite3')); r.begin(w)
+def tick(n):
+    for _ in range(n):
+        w.step(); r.frame(w)
+for step in json.loads(sys.argv[2]):
+    if step[0]=='tick': tick(step[1])
+    elif step[0]=='drive':
+        for i in range(step[1]):
+            if i%2==0:
+                c=w.make_command(steer=step[2],throttle=step[3]); r.input(w,c,w.command(c))
+            tick(1)
+    elif step[0]=='scenario': exercise_scenario(w,step[1],r)
+    elif step[0]=='stop':
+        v=w.vehicles[w.selected]; v.safe_stop(); v.brake=0.7; v.armed=False; r.append('stop',w.tick,{'vehicle_id':w.selected})
+    else:
+        w.paused=True
+        for v in w.vehicles.values(): v.safe_stop()
+        r.append('pause',w.tick,{'paused':True}); w.paused=False; r.append('pause',w.tick,{'paused':False})
+print(json.dumps(r.replay(r.run_id)))`,
+    [work, JSON.stringify(session)],
+  );
+  const storyRecorder = new sim.Recorder();
+  const storyWorld = new sim.World('aster', 42);
+  storyRecorder.begin(storyWorld);
+  const advance = (count) => {
+    for (let i = 0; i < count; i++) {
+      storyWorld.step();
+      storyRecorder.frame(storyWorld);
+    }
+  };
+  for (const [kind, a, b, c] of session) {
+    if (kind === 'tick') advance(a);
+    else if (kind === 'drive')
+      for (let i = 0; i < a; i++) {
+        if (i % 2 === 0) {
+          const command = storyWorld.makeCommand({ steer: b, throttle: c });
+          storyRecorder.input(storyWorld, command, storyWorld.command(command));
+        }
+        advance(1);
+      }
+    else if (kind === 'scenario') sim.exerciseScenario(storyWorld, a, storyRecorder);
+    else if (kind === 'stop') {
+      const vehicle = storyWorld.vehicles.get(storyWorld.selected);
+      vehicle.safeStop();
+      vehicle.brake = 0.7;
+      vehicle.armed = false;
+      storyRecorder.append('stop', storyWorld.tick, { vehicle_id: storyWorld.selected });
+    } else {
+      storyWorld.paused = true;
+      for (const vehicle of storyWorld.vehicles.values()) vehicle.safeStop();
+      storyRecorder.append('pause', storyWorld.tick, { paused: true });
+      storyWorld.paused = false;
+      storyRecorder.append('pause', storyWorld.tick, { paused: false });
+    }
+  }
+  const aster = sim.ARCHITECTURES.find((a) => a.id === 'aster');
+  const fromPython = sim.tellRun(pyReplay, aster);
+  const fromBrowser = sim.tellRun(await storyRecorder.replay(storyRecorder.run_id), aster);
+  check(
+    JSON.stringify(fromPython) === JSON.stringify(fromBrowser) &&
+      ['replayed_sequence', 'Safe Stop was requested', 'simulation was paused', 'command_timeout'].every((needle) =>
+        fromPython.moments.some((moment) => moment.text.includes(needle)),
+      ),
+    'Python and browser recordings tell the same story',
+    `${fromPython.moments.length} moments`,
+  );
+
   const restored = new sim.Recorder(4);
   await restored.restoreArchive(portable.archive());
   check(

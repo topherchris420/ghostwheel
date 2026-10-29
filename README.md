@@ -91,7 +91,7 @@ Instead of showing a green light and asking you to trust it, the laboratory expo
 | **01 / DISCOVER** | [Launch the lab](https://ghostwheel-one.vercel.app), open **Operations**, and choose **ASTER**. | The vehicle has a modeled architecture, telemetry, and an authorization boundary. |
 | **02 / DRIVE** | Select **Enable controls**. Hold **W** to accelerate; steer with **A / D**; use **S** to brake. | Requested steering and modeled steering are not necessarily the same. |
 | **03 / EXPERIMENT** | Under **Test a safeguard**, choose **REPLAY / duplicate sequence** and select **Run scenario**. | The gateway rejects a reused command with the reason <code>replayed_sequence</code>. |
-| **04 / INVESTIGATE** | Select **Finish drive & review**, inspect integrity, then choose **Save recording** or **Export verification ledger**. | A result is more useful when you can follow its event trail. |
+| **04 / INVESTIGATE** | Select **Finish drive & review**, read **The run, told plainly**, inspect integrity, then choose **Save recording** or **Export verification ledger**. | A result is more useful when you can follow its event trail. |
 | **05 / UNDERSTAND** | Open **Research lab**, set a seed, and run the experiment suite. | The same test meets three different modeled vehicle architectures. |
 
 **Controls:** Hold **W** to accelerate, **S** to brake, **A / D** to steer, and press **Space** to request a virtual **Safe Stop**. Hold-and-release buttons also work. Keep the app window focused. The in-app **Quick start** and four-step walkthrough guide the same first investigation.
@@ -176,6 +176,16 @@ The suite is repeatable; it is not an exhaustive attack test. Measurements descr
 **A simulation is an experience. A recorded decision is something you can investigate.**
 
 In **Forensic replay**, select a locally recorded session to play, pause, scrub, and examine its frames. GHOSTWHEEL checks the local event hash chain and recorded summaries. Runs from the **built-in** connector can also be checked by deterministic physics recomputation.
+
+### The run, told plainly
+
+Beside the replay, GHOSTWHEEL reads the recording back to you, one moment at a time:
+
+> **00:03.15** · A command reused an already accepted sequence number, so the gateway refused it: `replayed_sequence`. ASTER entered its virtual safe state and came to rest 1.30 s later, 2.0 m further on.
+
+Each sentence is written deterministically from the recorded frames: the first accepted command, each stretch of driving, every refusal and its reason, an expired command lease, Safe Stop, pauses, and what the vehicle did next. Select a moment and the replay moves to that frame; play the replay and the story follows. Download it as Markdown to keep beside the evidence.
+
+The account carries the recording's verification status. An imported file stays **not verified here**, and its story says so. Decisions that fell outside a frame's event window are reported as a gap, never guessed. The story is a reading of the frames, not new evidence.
 
 There are two deliberately different exports:
 

@@ -4,10 +4,9 @@
  * source so both editions produce the same trajectories for a seed.
  */
 import { PythonRandom } from './random';
+import { CHANNEL_AGREEMENT_DEG, DT, MAX_LATERAL_ACCEL, WATCHDOG_TICKS } from './limits';
 
-export const DT = 0.05;
-export const WATCHDOG_TICKS = 6;
-export const MAX_LATERAL_ACCEL = 5.0;
+export { DT, MAX_LATERAL_ACCEL, WATCHDOG_TICKS };
 const DEG_TO_RAD = Math.PI / 180;
 
 export interface Architecture {
@@ -208,7 +207,8 @@ export class VirtualVehicle {
     for (const ecu of this.steering_ecus) ecu.step(DT);
     if (
       this.steering_ecus.length > 1 &&
-      Math.abs(this.steering_ecus[0].angle_deg - this.steering_ecus[1].angle_deg) > 2.0
+      Math.abs(this.steering_ecus[0].angle_deg - this.steering_ecus[1].angle_deg) >
+        CHANNEL_AGREEMENT_DEG
     ) {
       this.agreement_fault = true;
       this.safeStop();

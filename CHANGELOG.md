@@ -4,6 +4,9 @@ Changes for release candidates are tracked here. A repository commit, successful
 
 ## Unreleased
 
+- Added **The run, told plainly** to Forensic replay: an account of each recording, written deterministically from its frames alone. Every moment cites its simulation time and tick, follows playback, and moves the replay to that frame when selected. Refusals name their recorded reason; imported snapshots stay marked "not verified here". Save it as Markdown with the recording's verification status.
+- Checked the account against real recordings in the workspace suite, and checked that the Python backend and the browser simulator tell the same session identically.
+
 - Removed the unavailable Validate simulator GitHub Actions workflow; local verification commands remain available.
 - Preserved current-run walkthrough progress when reviewing or saving older/imported recordings, and kept the Research lab action usable after a completed run reaches its recording limit.
 

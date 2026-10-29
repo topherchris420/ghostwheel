@@ -49,6 +49,11 @@ export interface Snapshot {
     target_steer_deg: number;
     soc_pct: number;
     last_sequence?: number;
+    throttle?: number;
+    brake?: number;
+    failsafe?: boolean;
+    agreement_fault?: boolean;
+    steering_channels?: { name: string; angle_deg: number; demand_deg: number; status: string }[];
   };
   metrics: {
     accepted: number;
@@ -69,7 +74,13 @@ export interface Snapshot {
     synthetic: true;
   }[];
   ecus: { name: string; status: string; rx: number; tx: number }[];
-  events: { tick: number; kind: string; accepted: boolean; reason: string; steer?: number }[];
+  events: {
+    tick: number;
+    kind: string;
+    accepted: boolean;
+    reason: string;
+    steer?: number | null;
+  }[];
   trail: { x_m: number; y_m: number }[];
   run_id: string;
   safety: { actuation: string; gateway: string; watchdog_ticks: number };

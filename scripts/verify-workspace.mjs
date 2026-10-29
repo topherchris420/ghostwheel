@@ -285,6 +285,19 @@ try {
   });
   assert.equal(downloads.at(-1), `ghostwheel-story-${runId}.md`);
   assert.match(mod.storyMarkdown(model.replay, story), /^# The run, told plainly\n/);
+  const single = document.createElement('div');
+  document.body.append(single);
+  const singleRoot = createRoot(single);
+  await act(async () => {
+    singleRoot.render(
+      React.createElement(mod.Forensics, { m: { ...model, runs: model.runs.slice(0, 1) } }),
+    );
+  });
+  assert.equal(single.querySelector('.run-library-heading').textContent, '1 RECENT RUN');
+  await act(async () => {
+    singleRoot.unmount();
+  });
+  single.remove();
   console.log('PASS  the review tells the run in order; each moment seeks its frame');
 
   // Every telling is derived from a real recording; nothing is pre-written.

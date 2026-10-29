@@ -6,10 +6,16 @@
   <meta name="theme-color" content="#0a1015">
   <meta name="description" content="What happens when a simulated car refuses to obey? Explore GHOSTWHEEL's authorization gateway, virtual vehicle responses, and replay evidence in an interactive decision diagram.">
   <meta property="og:type" content="website">
+  <meta property="og:site_name" content="GHOSTWHEEL">
   <meta property="og:title" content="GHOSTWHEEL | The command is simple. The decision isn't.">
   <meta property="og:description" content="Choose a command. Trace the gateway's decision. See what the virtual car does next.">
   <meta property="og:url" content="https://ghostwheel-one.vercel.app/ghostwheel-decision-lab.html">
+  <meta property="og:image" content="https://ghostwheel-one.vercel.app/ghostwheel-social-card.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="GHOSTWHEEL GW-01. The command is simple. The decision isn't. A steering command meets the gateway and is refused as a replayed sequence. Simulation only.">
   <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://ghostwheel-one.vercel.app/ghostwheel-social-card.png">
   <title>GHOSTWHEEL | Anatomy of a Decision</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <style>
@@ -29,6 +35,7 @@
     @media(max-width:1120px){.diagram-grid{grid-template-columns:minmax(0,1fr) 18px minmax(0,1.1fr) 18px minmax(0,1fr) 18px minmax(0,1.1fr)}.node{padding:15px 11px;min-height:345px}.scenario{padding:10px}.scenario .name{font-size:12px}.check{padding:7px 5px;font-size:10px}.status-ring{width:90px;height:90px}.status-ring svg{width:44px;height:44px}}
     @media(max-width:800px){.hero{grid-template-columns:1fr;padding-top:35px}.hero-aside{display:none}h1{font-size:clamp(47px,9.6vw,75px)}.scenarios{grid-template-columns:repeat(2,minmax(0,1fr))}.scenario{min-height:62px}.diagram-grid{grid-template-columns:1fr;gap:0}.node{min-height:0;padding:17px 18px}.arrow{height:26px}.arrow:before{height:100%;width:1.5px}.arrow:after{right:auto;bottom:1px;transform:rotate(135deg)}.node h2{font-size:22px}.node .foot{margin-top:14px}.node .mono-value{margin-top:15px}.checks{grid-template-columns:repeat(2,minmax(0,1fr));margin-top:14px}.check{font-size:10px}.verdict-node{gap:8px}.status-ring{margin:9px 0;width:86px;height:86px}.vehicle-art{min-height:70px}.vehicle-art svg{max-width:220px}.ledger{grid-template-columns:1fr}.under{flex-direction:column;align-items:flex-start}.details{grid-template-columns:1fr}.detail{padding:15px 0}.detail p{max-width:none}.boundary{font-size:9px;text-align:center}.barlinks .secondary-link{display:none}}
     @media(max-width:470px){.topbar{padding:13px 0}.brand{font-size:12px;letter-spacing:.12em}.brand small{display:none}.navlink{font-size:10px;padding:11px}.workbench-bar{padding:14px}.live-label{font-size:9px}.choose-area{padding:15px}.diagram{padding:8px 15px 20px}.scenario{min-height:67px}.ledger{padding:20px 15px}.checks{grid-template-columns:1fr}.footer{display:block}.footer a{display:inline-block;margin-top:14px}}
+    .noscript-note{margin:0;padding:12px 14px;border-left:3px solid var(--orange);background:#1c262c;color:#d3dfe0;font-size:13px;line-height:1.55}
   </style>
 </head>
 <body data-verdict="reject">
@@ -56,6 +63,7 @@
         <div class="workbench-bar"><div class="workbench-title"><span>01 / </span>THE DECISION ENGINE</div><div class="live-label"><span class="live-led" aria-hidden="true"></span> INTERACTIVE EXPLAINER · NOT A LIVE SIMULATION</div></div>
         <div class="choose-area">
           <div class="choose-label">Choose what the virtual vehicle receives</div>
+          <noscript><p class="noscript-note">Choosing a scenario needs JavaScript. Without it, the diagram below shows the duplicate-command case: a replayed sequence, refused.</p></noscript>
           <div class="scenarios" role="group" aria-label="Example command scenarios">
             <button type="button" class="scenario" data-scenario="valid" aria-pressed="false"><span class="num">SCENARIO 01</span><span class="name">Authorized turn</span></button>
             <button type="button" class="scenario" data-scenario="replay" aria-pressed="true"><span class="num">SCENARIO 02</span><span class="name">Duplicate command</span></button>

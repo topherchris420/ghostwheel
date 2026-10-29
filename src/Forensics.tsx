@@ -105,7 +105,8 @@ export default function Forensics({ m }: { m: ConsoleModel }) {
         )}
         <div className="run-library-heading">
           <Database size={15} />
-          {runs.length} {edition === 'browser' ? 'RECENT' : 'LOCAL'} RUNS
+          {runs.length} {edition === 'browser' ? 'RECENT' : 'LOCAL'}{' '}
+          {runs.length === 1 ? 'RUN' : 'RUNS'}
         </div>
         {edition === 'browser' && (
           <p className="run-library-note">
